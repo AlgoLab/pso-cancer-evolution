@@ -20,12 +20,12 @@ helper = None
 data = None
 
 
-def init(nparticles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, seed):
+def init(nparticles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions):
     global helper
     global particles
     global data
-    helper = Helper(matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2)
-    data = Data(nparticles, iterations, seed)
+    helper = Helper(matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions)
+    data = Data(nparticles, iterations)
     pso(nparticles, iterations, matrix)
     data.helper = helper
     return data, helper
@@ -44,12 +44,11 @@ def init_particle(i, particle, helper):
 
 
 
-
 def add_back_mutations():
     best_swarm_lh = helper.best_particle.best.likelihood
     tree_copy = helper.best_particle.current_tree.copy()
 
-    op = random.randint(0,1)
+    op = 0
     result = Op.tree_operation(helper, tree_copy, op)
     lh = Tree.greedy_loglikelihood(helper, tree_copy)
 
@@ -59,9 +58,6 @@ def add_back_mutations():
         helper.best_particle.current_tree = tree_copy.copy()
         helper.best_particle.best = helper.best_particle.current_tree
         helper.best_particle.best.likelihood = lh
-
-
-
 
 
 
@@ -369,14 +365,8 @@ def pso(nparticles, iterations, matrix):
 
 
     i = 0
-    while i < 100:
+    while i < 75:
         add_back_mutations()
         i += 1
-        if len(helper.best_particle.current_tree.losses_list) >= helper.k:
-            print("STOP!")
-            i = 100
-
-
-
 
     data.pso_end = time.time()

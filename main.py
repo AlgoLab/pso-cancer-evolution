@@ -3,7 +3,7 @@
 """Particle Swarm Optimization for Cancer Evolution
 
 Usage:
-    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--k=<k>] [--c1=<c1>] [--c2=<c2>] [--seed=<seed>] [--mutfile <mutfile>] [--multiple <runptcl>...]
+    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--k=<k>] [--c1=<c1>] [--c2=<c2>] [--d=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...]
     main.py -h | --help
     main.py -v | --version
 
@@ -16,10 +16,10 @@ Options:
     -t iterations --iterations iterations   Number of iterations [default: 3].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
-    --c1=<c1>                               Learning factor for particle best [default: 0.25]
-    --c2=<c2>                               Learning factor for swarm best [default: 0.75]
+    --c1=<c1>                               Learning factor for particle best [default: 0.25].
+    --c2=<c2>                               Learning factor for swarm best [default: 0.75].
     --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
-    --seed=<seed>                           Seed used for RNG. If -1, a random one is generated. [default: -1]
+    --d=<max_deletions>                     Maximum number of total deletions allowed [default: 10].
 """
 
 import io
@@ -46,7 +46,7 @@ def main(argv):
     k = int(arguments['--k'])
     c1 = float(arguments['--c1'])
     c2 = float(arguments['--c2'])
-    seed = int(arguments['--seed'])
+    max_deletions = int(arguments['--d'])
     runs = list(map(int, arguments['<runptcl>']))
 
 
@@ -82,7 +82,7 @@ def main(argv):
             run_dir = base_dir + "/p%d_i%d" % (ptcl, iterations)
             if not os.path.exists(run_dir):
                 os.makedirs(run_dir)
-            data, helper = pso.init(ptcl, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, seed)
+            data, helper = pso.init(ptcl, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions)
             data.summary(helper, run_dir)
             runs_data.append(data)
         Data.runs_summary(runs, runs_data, base_dir)
@@ -91,7 +91,7 @@ def main(argv):
         run_dir = base_dir + "/p%d_i%d" % (particles, iterations)
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
-        data, helper = pso.init(particles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, seed)
+        data, helper = pso.init(particles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions)
         data.summary(helper, run_dir)
 
 

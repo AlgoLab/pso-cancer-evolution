@@ -6,18 +6,13 @@ import sys
 import os
 class Data(object):
 
-    def __init__(self, nofparticles, iterations, seed):
+    def __init__(self, nofparticles, iterations):
         self.pso_start = 0
         self.pso_end = 0
         self.initialization_start = 0
         self.initialization_end = 0
         self.initialization_times = []
         self.starting_likelihood = 0
-        if seed == -1:
-            seed = random.randrange(sys.maxsize)
-        self.seed = seed
-
-        random.seed(seed)
 
         self.nofparticles = nofparticles
         self.iterations = iterations
@@ -105,7 +100,6 @@ class Data(object):
         f = open(dir + "/results.txt", "w+")
 
         f.write(">> Number of particles: %d\n" % self.nofparticles)
-        f.write(">> Seed used: %d\n" % self.seed)
         f.write(">> Number of iterations: %d\n" % self.iterations)
         f.write(">> Number of cells: %d\n" % helper.cells)
         f.write(">> Number of mutations: %d\n" % helper.mutations)
