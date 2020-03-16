@@ -17,7 +17,7 @@ class Node(Tree):
 
         super().__init__(newick=None, name=name)
 
-        if parent: # automatically add this node to its parent on creation
+        if parent: # automatically add this node to its parent on creation.
             parent.add_child(self)
 
     uid = property(fget=_get_uid)
@@ -46,7 +46,7 @@ class Node(Tree):
                     self.delete_b(helper, tree)
                 else:
                     self.delete(prevent_nondicotomic=False)
-    
+
     def delete_b(self, helper, tree):
         tree.losses_list.remove(self)
         tree.k_losses_list[self.mutation_id] -= 1
@@ -177,7 +177,7 @@ class Node(Tree):
             -germline  \-a
                    |
                     \-b
-            
+
             Our tree can be represented by the following matrix,
             obtained by combining every mutation genotype:
             M(T) =
@@ -286,7 +286,7 @@ class Node(Tree):
             if p.loss:
                 back_mutations.append(p)
         return back_mutations
-    
+
     def check_integrity(self):
         for n in self.traverse():
             for c in n.children:
@@ -313,7 +313,7 @@ class Node(Tree):
                         # moving up
                         if clade_to_attach == n:
                             clade_to_attach = n.up
-                        
+
                         n.delete(prevent_nondicotomic=False)
                         removed.append(n)
             for r in removed:
@@ -349,7 +349,7 @@ class Node(Tree):
             -germline  \-b
                    |
                     \-a
-            
+
             And suppose we are comparing the clades c1 and b2.
             genotype(c1) = [0 0 1 1]
             genotype(b2) = [0 1 1 0]
