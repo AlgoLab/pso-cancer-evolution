@@ -33,7 +33,7 @@ class Data(object):
         self.false_negatives = 0
         self.false_positives = 0
         self.missing_values = 0
-        
+
 
     def pso_passed_seconds(self):
         return self._passed_seconds(self.pso_start, self.pso_end)
@@ -67,7 +67,7 @@ class Data(object):
         averages = [0] * self.nofparticles
         for p, s in enumerate(sums):
             averages[p] = s / self.iterations
-        
+
         return averages
 
     def average_iteration_particle_time(self):
@@ -75,10 +75,10 @@ class Data(object):
         for j in range(self.iterations):
             for i in range(self.nofparticles):
                 average_times[j] += self.particle_iteration_times[i][j]
-        
+
         for j in range(self.iterations):
             average_times[j] /= self.iterations
-        
+
         return average_times
 
     def average_overall_particle(self):
@@ -89,7 +89,7 @@ class Data(object):
             sum += t
 
         return sum / self.nofparticles
-    
+
     def likelihood_over_time(self):
         likelihoods = []
         for it in self.iteration_new_best:

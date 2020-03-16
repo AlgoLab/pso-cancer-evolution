@@ -3,6 +3,8 @@ import random
 import sys
 import time
 import math
+import copy
+import numpy as np
 
 from Helper import Helper
 from Node import Node
@@ -10,7 +12,6 @@ from Operation import Operation as Op
 from Particle import Particle
 from Tree import Tree
 from datetime import datetime
-
 from Data import Data
 
 # global scope for multiprocessing
@@ -18,16 +19,17 @@ particles = []
 helper = None
 data = None
 
+
 def init(nparticles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, seed):
     global helper
     global particles
     global data
     helper = Helper(matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2)
     data = Data(nparticles, iterations, seed)
-
     pso(nparticles, iterations, matrix)
     data.helper = helper
     return data, helper
+
 
 def cb_init_particle(result):
     i, particle = result
@@ -35,10 +37,33 @@ def cb_init_particle(result):
     if (particle.current_tree.likelihood > helper.best_particle.best.likelihood):
         helper.best_particle = particle
 
-def init_particle(i, p, helper):
-    lh = Tree.greedy_loglikelihood(helper, p.current_tree)
-    p.current_tree.likelihood = lh
-    return i, p
+def init_particle(i, particle, helper):
+    lh = Tree.greedy_loglikelihood(helper, particle.current_tree)
+    particle.current_tree.likelihood = lh
+    return i, particle
+
+
+
+
+def add_back_mutations():
+    best_swarm_lh = helper.best_particle.best.likelihood
+    tree_copy = helper.best_particle.current_tree.copy()
+
+    op = random.randint(0,1)
+    result = Op.tree_operation(helper, tree_copy, op)
+    lh = Tree.greedy_loglikelihood(helper, tree_copy)
+
+    if lh > best_swarm_lh:
+        decreased = (best_swarm_lh - lh) / lh * 100
+        print(mytime() + "!!!!! new SWARM best, before: %f, now: %f, increased by %f%%" % (best_swarm_lh, lh, decreased))
+        helper.best_particle.current_tree = tree_copy.copy()
+        helper.best_particle.best = helper.best_particle.current_tree
+        helper.best_particle.best.likelihood = lh
+
+
+
+
+
 
 def cb_particle_iteration(r):
     i, result, op, p, tree_copy, start_time = r
@@ -63,29 +88,24 @@ def cb_particle_iteration(r):
     if lh > best_swarm_lh:
         # updating swarm best
         decreased = (best_swarm_lh - lh) / lh * 100
-        print(mytime() + "!!!!! %d new swarm best, before: %f, now: %f, increased by %f%%" % (p.number, best_swarm_lh, lh, decreased))
+        print(mytime() + "!!!!! %d new SWARM best, before: %f, now: %f, increased by %f%%" % (p.number, best_swarm_lh, lh, decreased))
         data.iteration_new_best[i][p.number] = lh
         helper.best_particle = p
 
     data.particle_iteration_times[p.number].append(data._passed_seconds(start_time, time.time()))
 
+
 def particle_iteration(it, p, helper):
-
-    start_time = time.time()
-    ops = list(range(0, Op.NUMBER))
-    result = -1
-
-    op = ops.pop(random.randint(0, len(ops) - 1))
 
     """
         we're going to "mix" three trees:
         - the current tree
-        The current solution that has to be modified
+            (the current solution that has to be modified)
         - the best swarm tree
-        This guides us to the best solution we know of
+            (this guides us to the best solution we know of)
         - the best particle tree
-        This slows down the way we get to the best solution, in order
-        to avoid getting stuck in a local optimum
+            (this slows down the way we get to the best solution, in order
+            to avoid getting stuck in a local optimum)
 
         We "move" by copying clades from a tree into another at a given height.
 
@@ -97,7 +117,7 @@ def particle_iteration(it, p, helper):
         d(T1, T2) = max ( sum_{x € T1}(m(x)), sum_{x € T2}(m(x)) ) - max_weight_matching(x)
 
         The more distant we are from an optimum, the faster we have to move.
-        The less distant we are from an optimu, the slower we have to move.
+        The less distant we are from an optimum, the slower we have to move.
 
         How fast we move defines how high the clades we copy are, so we define it
         as the velocity of our particle. The velocity is directly proportional to
@@ -108,49 +128,66 @@ def particle_iteration(it, p, helper):
         that we will pick from each tree.
     """
 
+    start_time = time.time()
+    ops = list(range(0, Op.NUMBER))
+    result = -1
+    op = ops.pop(random.randint(0, len(ops) - 1))
+
     tree_copy = p.current_tree.copy()
     # Higher probability of steep when no new best
     if it > 0 and data.iteration_new_particle_best[it - 1][p.number] == 0:
-        p.climb_probability += 0.1
+        p.climb_probability += 0.3
+
     if random.random() < math.log(p.climb_probability):
         print(mytime() + "/// %d Done operation" % p.number)
         p.climb_probability = 1.0
         result = Op.tree_operation(helper, tree_copy, op)
     else:
         print(mytime() + "/// %d Trying clade attachment" % p.number)
+
         best_swarm_copy = helper.best_particle.best.copy()
         best_particle_copy = p.best.copy()
 
         current_tree_mutations, current_tree_mn = p.current_tree.phylogeny.mutation_number(helper)
         max_clades = 2
-        distance_particle, _, _, mutations_particle, mut_number_particle = p.current_tree.phylogeny.distance(helper, best_particle_copy.phylogeny)
-        distance_swarm,    _, _, mutations_swarm, mut_number_swarm       = p.current_tree.phylogeny.distance(helper, best_swarm_copy.phylogeny)
+
+        distance_particle = p.current_tree.phylogeny.distance(helper, best_particle_copy.phylogeny)
+        distance_swarm = p.current_tree.phylogeny.distance(helper, best_swarm_copy.phylogeny)
 
         particle_clade = best_particle_copy.phylogeny.get_clade_distance(helper, max_clades, current_tree_mn, distance_particle)
         swarm_clade = best_swarm_copy.phylogeny.get_clade_distance(helper, max_clades, current_tree_mn, distance_swarm)
 
         if particle_clade is not None or swarm_clade is not None:
-            clade_attach = None
+            clade_to_be_attached = None
             if distance_particle == 0 or particle_clade is None: # it is the same tree
-                clade_attach = swarm_clade
+                clade_to_be_attached = swarm_clade
             elif distance_swarm == 0 or swarm_clade is None: # it is the same tree
-                clade_attach = particle_clade
+                clade_to_be_attached = particle_clade
             else:
                 ran = random.random()
-                if ran < .5:
-                    clade_attach = particle_clade
+
+                #riscalo c1 e c2 tra 0 e 1, in modo che c1+c2=1
+                #numero random per decidere se prendere dal particle_best o dallo swarm_best
+                c1 = helper.c1/(helper.c1+helper.c2)
+                c2 = helper.c2/(helper.c1+helper.c2)
+
+                if ran < c1:
+                    clade_to_be_attached = particle_clade
                 else:
-                    clade_attach = swarm_clade
+                    clade_to_be_attached = swarm_clade
 
-            clade_to_attach = tree_copy.phylogeny.get_clade_distance(helper, max_clades, current_tree_mn, max(distance_particle, distance_swarm), root=True)
-            if clade_to_attach is not None:
+            clade_destination = tree_copy.phylogeny.get_clade_distance(helper, max_clades, current_tree_mn, max(distance_particle, distance_swarm), root=True)
+            if clade_destination is not None:
                 # print ("mut id:", clade_to_attach.mutation_id, "mut height", clade_to_attach.get_height(), "curr mt:", current_tree_mn, "dist:", max(distance_particle, distance_swarm))
-                clade_attach = clade_attach.copy().detach()
-                clade_to_attach.attach_clade_and_fix(helper, tree_copy, clade_attach)
+                clade_to_be_attached = clade_to_be_attached.copy().detach()
+                clade_destination.attach_clade_and_fix(helper, tree_copy, clade_to_be_attached)
 
-            tree_copy.phylogeny.fix_for_losses(helper, tree_copy)
+
+        tree_copy.phylogeny.fix_for_losses(helper, tree_copy)
+        tree_copy.phylogeny.fix_useless_losses(helper, tree_copy)
 
     return it, result, op, p, tree_copy, start_time
+
 
 def particle_iteration_hill(it, p, helper):
     start_time = time.time()
@@ -189,7 +226,7 @@ def particle_iteration_hill_2(it, p, helper):
 
     else:
         tree_copy = p.current_tree.copy()
-    
+
     result = Op.tree_operation(helper, tree_copy, op)
     return it, result, op, p, tree_copy, start_time
 
@@ -251,12 +288,16 @@ def particle_iteration_clades(it, p, helper):
 def mytime():
     return( datetime.now().strftime("[%Y/%m/%d, %H:%M:%S] - ") )
 
+
+
 def pso(nparticles, iterations, matrix):
     global particles
     global helper
     global data
+
     # Particle initialization
     print(mytime() + "Particle initialization...")
+
     # Random position, each tree is a binary tree at the beginning
     particles = [Particle(helper.cells, helper.mutations, helper.mutation_names, n) for n in range(nparticles)]
 
@@ -282,23 +323,24 @@ def pso(nparticles, iterations, matrix):
 
     data.pso_start = time.time()
 
-    # Uncomment the following for single core computation
-
+    # # ----------- Uncomment the following for single core computation
+    #
     # for it in range(iterations):
     #     start_it = time.time()
-
+    #
     #     print("------- Iteration %d -------" % it)
     #     for p in particles:
     #         # if it == 20 and p.number == 20:
     #         #     p.current_tree.debug = True
-    #         # cb_particle_iteration(particle_iteration(it, p, helper))
-    #         cb_particle_iteration(particle_iteration_hill(it, p, helper)) # done!
+    #         cb_particle_iteration(particle_iteration(it, p, helper))
+    #         # cb_particle_iteration(particle_iteration_hill(it, p, helper)) # done!
     #         # cb_particle_iteration(particle_iteration_hill_2(it, p, helper))
     #         # cb_particle_iteration(particle_iteration_clades(it, p, helper))
     #     data.best_iteration_likelihoods.append(helper.best_particle.best.likelihood)
     #     data.iteration_times.append(data._passed_seconds(start_it, time.time()))
 
-    # Uncomment the following for parallel computation
+
+    # ----------- Uncomment the following for parallel computation
 
     for it in range(iterations):
         print(mytime() + "------- Iteration %d -------" % it)
@@ -321,7 +363,20 @@ def pso(nparticles, iterations, matrix):
         pool.close()
         pool.join()
 
+
         data.best_iteration_likelihoods.append(helper.best_particle.best.likelihood)
         data.iteration_times.append(data._passed_seconds(start_it, time.time()))
+
+
+    i = 0
+    while i < 100:
+        add_back_mutations()
+        i += 1
+        if len(helper.best_particle.current_tree.losses_list) >= helper.k:
+            print("STOP!")
+            i = 100
+
+
+
 
     data.pso_end = time.time()

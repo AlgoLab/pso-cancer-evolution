@@ -1,14 +1,15 @@
 # -*- coding:utf-8 -*-
+
 """Particle Swarm Optimization for Cancer Evolution
 
 Usage:
-    pso.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--k=<k>] [--c1=<c1>] [--c2=<c2>] [--seed=<seed>] [--mutfile <mutfile>] [--multiple <runptcl>...]
-    pso.py -h | --help
-    pso.py -v | --version
+    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--k=<k>] [--c1=<c1>] [--c2=<c2>] [--seed=<seed>] [--mutfile <mutfile>] [--multiple <runptcl>...]
+    main.py -h | --help
+    main.py -v | --version
 
 Options:
     -h --help                               Shows this screen.
-    --version                               Shows version.
+    -v --version                            Shows version.
     -i infile --infile infile               Matrix input file.
     --mutfile mutfile                       Path of the mutation names. If this parameter is not used, then the mutations will be named progressively from 1 to mutations.
     -p particles --particles particles      Number of particles to use for PSO [default: 5].
@@ -36,7 +37,7 @@ from datetime import datetime
 
 
 def main(argv):
-    arguments = docopt(__doc__, version="PSO-Cancer-Evolution 1.0")
+    arguments = docopt(__doc__, version = "PSO-Cancer-Evolution 2.0")
 
     particles = int(arguments['--particles'])
     iterations = int(arguments['--iterations'])
@@ -66,7 +67,7 @@ def main(argv):
                 raise Exception("Mutation names number in file does not match mutation number in data!", len(mutation_names), mutations)
     else:
         mutation_names = [i + 1 for i in range(mutations)]
-    
+
     if k == mutations:
         raise Exception("Cannot have same possibile losses as mutations")
 
@@ -84,7 +85,6 @@ def main(argv):
             data, helper = pso.init(ptcl, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, seed)
             data.summary(helper, run_dir)
             runs_data.append(data)
-
         Data.runs_summary(runs, runs_data, base_dir)
 
     else:
@@ -93,6 +93,8 @@ def main(argv):
             os.makedirs(run_dir)
         data, helper = pso.init(particles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, seed)
         data.summary(helper, run_dir)
+
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

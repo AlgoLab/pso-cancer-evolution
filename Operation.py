@@ -1,5 +1,6 @@
 from Node import Node
 import random as r
+import numpy
 
 def accept(currentIteration, iterations):
     return r.random() < (currentIteration / iterations)
@@ -36,38 +37,90 @@ class Operation(object):
         else:
             raise SystemError("Something has happened while chosing an operation")
 
+    # @classmethod
+    # def add_back_mutation(cls, helper, tree):
+    #
+    #     max_losses = helper.k
+    #     # gets a list of all the nodes from cache
+    #     cached_nodes = tree.phylogeny.get_cached_content()
+    #     keys = list(cached_nodes.keys())
+    #     # select a random node
+    #     # root has no parent, hence cannot add a back mutation
+    #     # keep trying until we find a suitable node
+    #     node = r.choice(keys)
+    #     if node.up == None or node.up.up == None:
+    #         return 1
+    #
+    #     # if losses list has reached its maximum, then we can't procede
+    #     if (len(tree.losses_list) >= max_losses):
+    #         return 1
+    #
+    #     # select our candidates amongst the ancestors
+    #     candidates = [p for p in node.iter_ancestors() if (p.loss == False) and (p.mutation_id != -1)]
+    #     if len(candidates) == 0:
+    #         return 1
+    #
+    #     # selecting one random ancestor
+    #     candidate = r.choice(candidates)
+    #     # Ensuring we have no more than k mutations per mutation type
+    #     if (tree.k_losses_list[candidate.mutation_id] >= helper.k):
+    #         return 1
+    #     # If the mutation is already lost in the current tree, no way to remove it again
+    #     if (node.is_mutation_already_lost(candidate.mutation_id)):
+    #         return 1
+    #
+    #     node_deletion = Node(candidate.name, None, candidate.mutation_id, True)
+    #
+    #     tree.losses_list.append(node_deletion)
+    #     tree.k_losses_list[node_deletion.mutation_id] += 1
+    #
+    #     # saving parent before detaching
+    #     par = node.up
+    #     current = node.detach()
+    #     par.add_child(node_deletion)
+    #     node_deletion.add_child(current)
+    #     current.fix_for_losses(helper, tree)
+    #     tree.operation = cls(cls.BACK_MUTATION, node_name_1=candidate.name, node_name_2=node_deletion.name)
+    #     return 0
+
+
+
     @classmethod
     def add_back_mutation(cls, helper, tree):
 
+        #dollo-k
         max_losses = helper.k
+
         # gets a list of all the nodes from cache
         cached_nodes = tree.phylogeny.get_cached_content()
         keys = list(cached_nodes.keys())
+
         # select a random node
-        # node has no parent, hence cannot add a back mutation
+        # root has no parent, hence cannot add a back mutation
         # keep trying until we find a suitable node
         node = r.choice(keys)
-        if node.up == None or node.up.up == None:
-            return 1
+        while node.up == None or node.up.up == None:
+            node = r.choice(keys)
 
         # if losses list has reached its maximum, then we can't procede
+        print(tree.losses_list)
         if (len(tree.losses_list) >= max_losses):
             return 1
 
-        # select our candidates amongst the ancestors
+        # selecting one random ancestor of the selected node
         candidates = [p for p in node.iter_ancestors() if (p.loss == False) and (p.mutation_id != -1)]
         if len(candidates) == 0:
-            return 1
-
-        # selecting one random ancestor
+            return 2
         candidate = r.choice(candidates)
+
         # Ensuring we have no more than k mutations per mutation type
         if (tree.k_losses_list[candidate.mutation_id] >= helper.k):
-            return 1
+            return 3
+
         # If the mutation is already lost in the current tree, no way to remove it again
         if (node.is_mutation_already_lost(candidate.mutation_id)):
-            return 1
-        #
+            return 4
+
         node_deletion = Node(candidate.name, None, candidate.mutation_id, True)
 
         tree.losses_list.append(node_deletion)
@@ -80,7 +133,22 @@ class Operation(object):
         node_deletion.add_child(current)
         current.fix_for_losses(helper, tree)
         tree.operation = cls(cls.BACK_MUTATION, node_name_1=candidate.name, node_name_2=node_deletion.name)
+
+        # Operation.update_losses_list(tree)
+
         return 0
+
+
+    @classmethod
+    def update_losses_list(cls, tree):
+        tree.k_losses_list = numpy.multiply(tree.k_losses_list, 0)
+        tree.losses_list = []
+        nodes = tree.phylogeny.get_cached_content()
+        for n in nodes:
+            if n.loss:
+                tree.losses_list.append(n)
+                tree.k_losses_list[n.mutation_id] += 1
+
 
     @classmethod
     def mutation_delete(cls, helper, tree):
@@ -91,6 +159,7 @@ class Operation(object):
         tree.operation = cls(cls.DELETE_MUTATION, node_name_1=node_delete.name)
         node_delete.delete_b(helper, tree)
         return 0
+
 
     @classmethod
     def switch_nodes(cls, helper, tree):
@@ -139,6 +208,7 @@ class Operation(object):
 
     @classmethod
     def prob(cls, I, E, genotypes, helper, particle, data=None):
+
         p = 0
         if I == 0:
             if E == 0:

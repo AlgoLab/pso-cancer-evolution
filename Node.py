@@ -3,6 +3,8 @@ import networkx as nx
 from ete3 import Tree
 from graphviz import Source
 import operator
+import numpy as np
+import matplotlib.pyplot as plt
 
 import json
 
@@ -17,7 +19,7 @@ class Node(Tree):
 
         super().__init__(newick=None, name=name)
 
-        if parent: # automatically add this node to its parent on creation.
+        if parent: # automatically add this node to its parent on creation
             parent.add_child(self)
 
     uid = property(fget=_get_uid)
@@ -47,16 +49,46 @@ class Node(Tree):
                 else:
                     self.delete(prevent_nondicotomic=False)
 
+
+    def fix_useless_losses(self, helper, tree):
+        """
+        Deletes loss nodes that:
+         - don't inherit any mutations
+         - are duplicates of other nodes
+        """
+        nodes = self.get_cached_content()
+        mutations = []
+        losses = []
+        s = 0
+        for n in nodes:
+            n_genotype = [0] * helper.mutations
+            n.get_genotype_profile(n_genotype)
+            sum_ = 0
+            for m in n_genotype:
+                sum_ += m
+            if sum_ == 0 and str(n) != "germline" and n.children != []:
+                n.delete_b(helper, tree)
+
+            if n.loss:
+                if[n,n.up] in losses:
+                    n.delete_b(helper, tree)
+                else:
+                    losses.append([n,n.up])
+
+
     def delete_b(self, helper, tree):
-        tree.losses_list.remove(self)
-        tree.k_losses_list[self.mutation_id] -= 1
-        self.delete(prevent_nondicotomic=False)
+        if self in tree.losses_list:
+            tree.losses_list.remove(self)
+            tree.k_losses_list[self.mutation_id] -= 1
+            self.delete(prevent_nondicotomic=False)
 
         # TODO: workout how can sigma be done
         # for i in range(helper.cells):
 
+
     def find_node_by_uid(self, uid_):
         return next(self.iter_search_nodes(uid=uid_), None)
+
 
     def is_loss_valid(self, mutation_id=None):
         """ Checks if current node mutation is valid up until the root node """
@@ -66,6 +98,7 @@ class Node(Tree):
             if par.mutation_id == mutation_id:
                 return True
         return False
+
 
     def is_mutation_already_lost(self, mutation_id, k=3):
         """
@@ -77,6 +110,7 @@ class Node(Tree):
 
         return False
 
+
     def is_ancestor_of(self, node):
         """ Checks if current node is parent of the given arguent node """
         par = self.up
@@ -85,6 +119,7 @@ class Node(Tree):
                 return True
             par = par.up
         return False
+
 
     def prune_and_reattach(self, node_reattach):
         """ Detaches current node (with all its descendants) and reattaches it into another node """
@@ -102,9 +137,11 @@ class Node(Tree):
         node_reattach.add_child(self)
         return 0
 
+
     def get_depth(self):
         ancestors = [n for n in self.iter_ancestors()]
         return len(ancestors)
+
 
     def get_height(self):
         "Returns the tree height from the current node"
@@ -113,10 +150,12 @@ class Node(Tree):
             height = max(height, child.get_height())
         return height + 1
 
+
     def copy_from(self, node):
         self.name = node.name
         self.mutation_id = node.mutation_id
         self.loss = node.loss
+
 
     def swap(self, node):
         """ Switch this data with with that of another node """
@@ -124,18 +163,20 @@ class Node(Tree):
         self.copy_from(node)
         node.copy_from(tmp_node)
 
-    def get_clade_distance(self, helper, nclades, tree_mt, distance, root=False):
+
+    def get_clade_distance(self, helper, nclades, tree_mn, distance, root=False):
         clade = None
         clade_mut_number = None
         nodes = self.get_clades() if not root else self.get_cached_content()
 
         for cl in nodes:
             mutations, mut_number = cl.mutation_number(helper)
-            if mut_number <= distance and mut_number >= tree_mt - distance:
+            if mut_number <= distance and mut_number >= tree_mn - distance:
                 if clade is None or mut_number > clade_mut_number:
                     clade = cl
                     clade_mut_number = mut_number
         return clade
+
 
     def _get_parent_at_height(self, height=1):
         " Support function that returns the parent node at the desired height "
@@ -147,6 +188,7 @@ class Node(Tree):
             par = par.up
         return par
 
+
     def get_clades(self):
         """
         Clades are defined as every node in the tree, excluding the root
@@ -156,6 +198,7 @@ class Node(Tree):
         nodes_list = list(self.get_cached_content().keys())
         nodes_list.remove(self)
         return nodes_list
+
 
     def get_genotype_profile(self, genotypes):
         " Walks up to the root and maps the genotype for the current node mutation "
@@ -167,6 +210,7 @@ class Node(Tree):
             genotypes[self.mutation_id] -= 1
 
         self.up.get_genotype_profile(genotypes)
+
 
     def mutation_number(self, helper):
         """
@@ -212,12 +256,14 @@ class Node(Tree):
             s += sum_
         return mutations, s
 
+
     def get_clades_max_nodes(self, max=1):
         clades = []
         for cl in self.get_clades():
             if len(cl.get_cached_content()) <= max and not cl.loss:
                 clades.append(cl)
         return clades
+        
 
     def distance(self, helper, tree):
         """
@@ -229,7 +275,6 @@ class Node(Tree):
 
             d(T1, T2) = max ( sum_{x € T1}(m(x)), sum_{x € T2}(m(x)) ) - max_weight_matching(x)
             d(T1, T2) € [ 0; (m' * (m' + 1)) / 2 - (m * (m + 1)) / 2 ]
-
         """
         clades_t1 = self.get_clades()
         clades_t2 = tree.get_clades()
@@ -270,11 +315,22 @@ class Node(Tree):
                 max_weight_edge = edges[i]
         distance = max(mut_number_t1, mut_number_t2) - max_weight
 
-        print(matched_weights)
-        print(max_matching)
+        # print("\nclades_t1:       "+str(clades_t1))
+        # print("\nclades_t2:       "+str(clades_t2))
+        # print("\nmutations_t1:    "+str(mutations_t1))
+        # print("mut_number_t1:     "+str(mut_number_t1))
+        # print("\nmutations_t2:    "+str(mutations_t2))
+        # print("mut_number_t2:     "+str(mut_number_t2))
+        # print("\nmax_matching:    "+str(max_matching))
+        # print("\nmatched_weights: "+str(matched_weights))
+        # print("\nmax_weight:      "+str(max_weight))
+        # print("\ndistance:         "+str(distance))
+        # print("")
+
         return distance
         # return distance, max_weight_edge
         # return distance, mutations_t1, mut_number_t1, mutations_t2, mut_number_t2
+
 
     def back_mutation_ancestry(self):
         """
@@ -287,10 +343,12 @@ class Node(Tree):
                 back_mutations.append(p)
         return back_mutations
 
+
     def check_integrity(self):
         for n in self.traverse():
             for c in n.children:
                 assert(c.up == n)
+
 
     def attach_clade(self, helper, tree, clade):
         "Remove every node already in clade"
@@ -320,16 +378,18 @@ class Node(Tree):
                 nodes_list.pop(r)
         clade_to_attach.add_child(clade)
 
+
     def attach_clade_and_fix(self, helper, tree, clade):
         """
         Attaches a clade to the phylogeny tree and fixes everything
         """
         for n in clade.traverse():
-            if not tree.k_losses_list[n.mutation_id] <= helper.k:
+            if tree.k_losses_list[n.mutation_id] > helper.k:
                 n.delete(prevent_nondicotomic=False)
         self.attach_clade(helper, tree, clade)
         self.fix_for_losses(helper, tree)
         # self.check_integrity()
+
 
     @classmethod
     def common_clades_mutation(cls, helper, clade1, clade2):
