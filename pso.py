@@ -20,11 +20,11 @@ helper = None
 data = None
 
 
-def init(nparticles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions):
+def init(nparticles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, gamma, k, c1, c2, max_deletions):
     global helper
     global particles
     global data
-    helper = Helper(matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions)
+    helper = Helper(matrix, mutations, mutation_names, cells, alpha, beta, gamma, k, c1, c2, max_deletions)
     data = Data(nparticles, iterations)
     pso(nparticles, iterations, matrix)
     data.helper = helper
@@ -365,7 +365,7 @@ def pso(nparticles, iterations, matrix):
 
 
     i = 0
-    while i < 75:
+    while i < 50:
         add_back_mutations()
         i += 1
 

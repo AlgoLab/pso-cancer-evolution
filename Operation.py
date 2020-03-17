@@ -57,24 +57,37 @@ class Operation(object):
         if (len(tree.losses_list) >= helper.max_deletions):
             return 1
 
-        # selecting one random ancestor of the selected node
+        # selecting possible node candidates (every ancestor)
         candidates = [p for p in node.iter_ancestors() if (p.loss == False) and (p.mutation_id != -1)]
         if len(candidates) == 0:
-            return 2
-        candidate = r.choice(candidates)
+            return 1
+
+        # selecting one random ancestor, based on gamma probabilities
+        trovato = False
+        i = 0
+        r.shuffle(candidates)
+        while not(trovato) and i < len(candidates):
+            candidate = candidates[i]
+            rand = r.random()
+            print(str(rand)+" < "+str(helper.gamma[candidate.mutation_id])+" ["+str(candidate)+"] ???")
+            if rand < helper.gamma[candidate.mutation_id]:
+                trovato = True
+            i += 1
+        if not(trovato):
+            return 1
 
         # Ensuring we have no more than k mutations per mutation type
         if (tree.k_losses_list[candidate.mutation_id] >= helper.k):
-            return 3
+            return 1
 
         # If the mutation is already lost in the current tree, no way to remove it again
         if (node.is_mutation_already_lost(candidate.mutation_id)):
-            return 4
+            return 1
 
         node_deletion = Node(candidate.name, None, candidate.mutation_id, True)
 
         if (tree.k_losses_list[node_deletion.mutation_id] >= helper.k):
-            return 5
+            return 1
 
         tree.losses_list.append(node_deletion)
         tree.k_losses_list[node_deletion.mutation_id] += 1

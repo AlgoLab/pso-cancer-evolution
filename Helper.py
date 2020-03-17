@@ -1,11 +1,12 @@
 class Helper(object):
-    def __init__(self, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions):
+    def __init__(self, matrix, mutations, mutation_names, cells, alpha, beta, gamma, k, c1, c2, max_deletions):
         self.matrix = matrix
         self.mutations = mutations
         self.mutation_names = mutation_names
         self.cells = cells
         self.alpha = alpha
         self.beta = beta
+        self.gamma = gamma
         self.k = k
         self.c1 = c1
         self.c2 = c2

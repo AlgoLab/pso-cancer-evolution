@@ -3,7 +3,7 @@
 """Particle Swarm Optimization for Cancer Evolution
 
 Usage:
-    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--k=<k>] [--c1=<c1>] [--c2=<c2>] [--d=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...]
+    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...]
     main.py -h | --help
     main.py -v | --version
 
@@ -16,15 +16,17 @@ Options:
     -t iterations --iterations iterations   Number of iterations [default: 3].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
+    --gamma=<gamma>                         Loss probability for each mutations [default: 1].
     --c1=<c1>                               Learning factor for particle best [default: 0.25].
     --c2=<c2>                               Learning factor for swarm best [default: 0.75].
     --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
-    --d=<max_deletions>                     Maximum number of total deletions allowed [default: 10].
+    --maxdel=<max_deletions>                Maximum number of total deletions allowed [default: 10].
 """
 
 import io
 import sys
 import os
+import copy
 
 import numpy as np
 from docopt import docopt
@@ -43,10 +45,11 @@ def main(argv):
     iterations = int(arguments['--iterations'])
     alpha = float(arguments['--alpha'])
     beta = float(arguments['--beta'])
+    gamma = arguments['--gamma']
     k = int(arguments['--k'])
     c1 = float(arguments['--c1'])
     c2 = float(arguments['--c2'])
-    max_deletions = int(arguments['--d'])
+    max_deletions = int(arguments['--maxdel'])
     runs = list(map(int, arguments['<runptcl>']))
 
 
@@ -68,7 +71,19 @@ def main(argv):
     else:
         mutation_names = [i + 1 for i in range(mutations)]
 
-    if k == mutations:
+
+    try:
+        gamma = float(gamma)
+        gamma = [gamma]*mutations
+    except ValueError:
+        with open(gamma) as f3:
+            tmp = [float(l.strip()) for l in f3.readlines()]
+            if len(tmp) != mutations:
+                raise Exception("gammas number does not match mutation names number!", len(mutation_names), mutations)
+        gamma = tmp
+
+
+    if max_deletions == mutations:
         raise Exception("Cannot have same possibile losses as mutations")
 
     matrix = matrix.tolist()
@@ -82,7 +97,7 @@ def main(argv):
             run_dir = base_dir + "/p%d_i%d" % (ptcl, iterations)
             if not os.path.exists(run_dir):
                 os.makedirs(run_dir)
-            data, helper = pso.init(ptcl, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions)
+            data, helper = pso.init(ptcl, iterations, matrix, mutations, mutation_names, cells, alpha, beta, gamma, k, c1, c2, max_deletions)
             data.summary(helper, run_dir)
             runs_data.append(data)
         Data.runs_summary(runs, runs_data, base_dir)
@@ -91,7 +106,7 @@ def main(argv):
         run_dir = base_dir + "/p%d_i%d" % (particles, iterations)
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
-        data, helper = pso.init(particles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, k, c1, c2, max_deletions)
+        data, helper = pso.init(particles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, gamma, k, c1, c2, max_deletions)
         data.summary(helper, run_dir)
 
 
