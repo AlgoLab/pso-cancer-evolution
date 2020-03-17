@@ -1,6 +1,6 @@
-# Particle Swarm Optimization for Cancer Evolution
+# Particle Swarm Optimization for Cancer Evolution 2.0
 
-## Pseuco-Code
+## Pseudo-Code
 
 ```
 for each particle
@@ -27,7 +27,7 @@ do
             x_i(k + 1) = x_i(k) + v_i(k + 1)
     end for
     k = k + 1
-while maximum interations or minimum error criteria is not attained
+while maximum iterations or minimum error criteria is not attained
 ```
 
 ## The General Idea
@@ -36,39 +36,30 @@ The aim is to find an optimal tree given the input matrix.
 
 ## Setup
 
-The setup is very easy, just install every package included in the project and run with the required arguments!
-
 I recommend creating a `virtualenv` with `python3`, because that's what I used:
 ```shell
-$ virtualenv env -p `which python 3`
+$ virtualenv env -p `which python3`
 $ source ./env/bin/activate
 ```
 
-Now you should be in a situation like this:
+
+Then install every package necessary:
 
 ```shell
-(env) $ _ 
-```
-
-And then install every package necessary:
-
-```shell
-(env) $ pip install graphviz ete3
+(env) $ pip install numpy
+(env) $ pip install graphviz
+(env) $ pip install ete3
+(env) $ pip install docopt
+(env) $ pip install matplotlib
+(env) $ pip install networkx
 ```
 
 Done!
 
-## Examples
+## Example
 
-Here's a list of examples that you can try:
-
-```shell
-(env) $ python main.py --infile "data/easy/3.txt" --mutations 8 --iterations 10 --mutfile "data/easy/3_mut.txt"
-```
+Example:
 
 ```shell
-(env) $ python main.py --infile "data/scg_gawad/pat1.txt" --mutations 20 --mutfile "data/scg_gawad/pat1_mut.txt" --particles 10 --iterations 500
+(env) $ python3 main.py --infile "data/gawad2.txt" --particles 10 --iterations 20 --c1 1 --c2 1 --d 10 --k 10 --mutfile "data/gawad2_mut.txt"
 ```
-
-# Diestel - Graph Theory
-# Korte Vygen - Combinatorial Optimization
