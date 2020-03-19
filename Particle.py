@@ -11,6 +11,7 @@ class Particle(object):
         # best tree with the best likelihood so far
         self.best = self.current_tree
         self.climb_probability = 1.0
+        self.velocity = 0.01
 
 
     def __repr__(self):

@@ -134,10 +134,9 @@ class Tree(object):
 
         nodes_list = tree.phylogeny.get_cached_content()
         node_genotypes = [
-            [0 for j in range(helper.mutations)]
+            [0 for j in range(helper.mutation_number)]
             for i in range(len(nodes_list))
         ]
-
         for i, n in enumerate(nodes_list):
             n.get_genotype_profile(node_genotypes[i])
 
@@ -154,7 +153,7 @@ class Tree(object):
 
             for n in range(len(nodes_list)):
                 lh = 0
-                for j in range(helper.mutations):
+                for j in range(helper.mutation_number):
                     p = Op.prob(helper.matrix[i][j], node_genotypes[n][j], node_genotypes, helper, tree, data)
                     lh += math.log(p)
 

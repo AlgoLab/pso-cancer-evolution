@@ -3,7 +3,7 @@
 """Particle Swarm Optimization for Cancer Evolution
 
 Usage:
-    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...]
+    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--w=<w>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...]
     main.py -h | --help
     main.py -v | --version
 
@@ -17,6 +17,7 @@ Options:
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
     --gamma=<gamma>                         Loss probability for each mutations [default: 1].
+    --w=<w>                                 Inertia factor [default: 0.5].
     --c1=<c1>                               Learning factor for particle best [default: 0.25].
     --c2=<c2>                               Learning factor for swarm best [default: 0.75].
     --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
@@ -45,48 +46,28 @@ def main(argv):
     iterations = int(arguments['--iterations'])
     alpha = float(arguments['--alpha'])
     beta = float(arguments['--beta'])
-    gamma = arguments['--gamma']
     k = int(arguments['--k'])
+    w = float(arguments['--w'])
     c1 = float(arguments['--c1'])
     c2 = float(arguments['--c2'])
     max_deletions = int(arguments['--maxdel'])
     runs = list(map(int, arguments['<runptcl>']))
 
+    matrix = read_matrix(arguments['--infile'])
 
-    with open(arguments['--infile'], 'r') as f:
-        # reading the file and feeding it to numpy
-        # assuring that we at least have 2D array to work with
-        matrix = np.atleast_2d(np.loadtxt(io.StringIO(f.read())))
-
-    # number of mutations = number of columns
-    mutations = matrix.shape[1]
-    # number of cells = number of rows
+    mutation_number = matrix.shape[1]
     cells = matrix.shape[0]
 
-    if arguments['--mutfile']:
-        with open(arguments['--mutfile']) as f2:
-            mutation_names = [l.strip() for l in f2.readlines()]
-            if len(mutation_names) != mutations:
-                raise Exception("Mutation names number in file does not match mutation number in data!", len(mutation_names), mutations)
-    else:
-        mutation_names = [i + 1 for i in range(mutations)]
+    mutation_names = read_mutation_names(arguments['--mutfile'], mutation_number)
+    gamma = read_gamma(arguments['--gamma'], mutation_number)
 
 
-    try:
-        gamma = float(gamma)
-        gamma = [gamma]*mutations
-    except ValueError:
-        with open(gamma) as f3:
-            tmp = [float(l.strip()) for l in f3.readlines()]
-            if len(tmp) != mutations:
-                raise Exception("gammas number does not match mutation names number!", len(mutation_names), mutations)
-        gamma = tmp
-
-
-    if max_deletions == mutations:
+    if max_deletions == mutation_number:
         raise Exception("Cannot have same possibile losses as mutations")
 
+
     matrix = matrix.tolist()
+
 
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
 
@@ -97,7 +78,7 @@ def main(argv):
             run_dir = base_dir + "/p%d_i%d" % (ptcl, iterations)
             if not os.path.exists(run_dir):
                 os.makedirs(run_dir)
-            data, helper = pso.init(ptcl, iterations, matrix, mutations, mutation_names, cells, alpha, beta, gamma, k, c1, c2, max_deletions)
+            data, helper = pso.init(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions)
             data.summary(helper, run_dir)
             runs_data.append(data)
         Data.runs_summary(runs, runs_data, base_dir)
@@ -106,8 +87,42 @@ def main(argv):
         run_dir = base_dir + "/p%d_i%d" % (particles, iterations)
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
-        data, helper = pso.init(particles, iterations, matrix, mutations, mutation_names, cells, alpha, beta, gamma, k, c1, c2, max_deletions)
+        data, helper = pso.init(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions)
         data.summary(helper, run_dir)
+
+
+
+
+def read_matrix(path):
+    with open(path, 'r') as f:
+        # assuring that we at least have 2D array to work with
+        return np.atleast_2d(np.loadtxt(io.StringIO(f.read())))
+
+
+def read_mutation_names(path, mutation_number):
+    if path:
+        with open(path, 'r') as f:
+            mutation_names = [l.strip() for l in f.readlines()]
+            if len(mutation_names) != mutation_number:
+                raise Exception("Mutation names number in file does not match mutation number in data!", len(mutation_names), mutations)
+    else:
+        mutation_names = [i + 1 for i in range(mutation_number)]
+    return mutation_names
+
+
+def read_gamma(path, mutation_number):
+    gamma = path
+    try:
+        gamma = float(gamma)
+        gamma = [gamma]*mutation_number
+    except ValueError:
+        with open(gamma) as f:
+            tmp = [float(l.strip()) for l in f.readlines()]
+            if len(tmp) != mutatio_number:
+                raise Exception("gammas number does not match mutation names number!", len(mutation_names), mutation_number)
+        gamma = tmp
+    return gamma
+
 
 
 

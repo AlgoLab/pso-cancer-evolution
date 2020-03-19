@@ -102,7 +102,7 @@ class Data(object):
         f.write(">> Number of particles: %d\n" % self.nofparticles)
         f.write(">> Number of iterations: %d\n" % self.iterations)
         f.write(">> Number of cells: %d\n" % helper.cells)
-        f.write(">> Number of mutations: %d\n" % helper.mutations)
+        f.write(">> Number of mutations: %d\n" % helper.mutation_number)
         f.write(">> Starting likelihood: %f\n" % self.starting_likelihood)
         f.write(">> Best likelihood: %f\n" % helper.best_particle.best.likelihood)
         f.write(">> Added mutations: %s\n" % ', '.join(map(str, helper.best_particle.best.losses_list)))

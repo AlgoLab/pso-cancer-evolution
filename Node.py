@@ -61,7 +61,7 @@ class Node(Tree):
         losses = []
         s = 0
         for n in nodes:
-            n_genotype = [0] * helper.mutations
+            n_genotype = [0] * helper.mutation_number
             n.get_genotype_profile(n_genotype)
             sum_ = 0
             for m in n_genotype:
@@ -70,6 +70,8 @@ class Node(Tree):
                 n.delete_b(helper, tree)
 
             if n.loss:
+                if not(n.up.loss) and n.up.mutation_id == n.mutation_id and n.children == []: #mai controllato se va veramente
+                    n.delete_b(helper, tree)
                 if[n,n.up] in losses:
                     n.delete_b(helper, tree)
                 else:
@@ -246,7 +248,7 @@ class Node(Tree):
         mutations = []
         s = 0
         for n in nodes:
-            n_genotype = [0] * helper.mutations
+            n_genotype = [0] * helper.mutation_number
             n.get_genotype_profile(n_genotype)
             sum_ = 0
             for m in n_genotype:
@@ -263,7 +265,46 @@ class Node(Tree):
             if len(cl.get_cached_content()) <= max and not cl.loss:
                 clades.append(cl)
         return clades
-        
+
+
+    def distanza(self, helper, tree):
+        nodes1 = self.get_cached_content()
+        genotypes1 = [
+            [0 for j in range(helper.mutation_number)]
+            for i in range(len(nodes1))
+        ]
+        for i, n in enumerate(nodes1):
+            n.get_genotype_profile(genotypes1[i])
+
+        nodes2 = tree.phylogeny.get_cached_content()
+        genotypes2 = [
+            [0 for j in range(helper.mutation_number)]
+            for i in range(len(nodes2))
+        ]
+        for i, n in enumerate(nodes2):
+            n.get_genotype_profile(genotypes2[i])
+
+
+        uguali = 0
+        for i1 in range(len(nodes1)):
+            best_sim_line = 0
+            for i2 in range(len(nodes2)):
+                tmp = 0
+                for j in range(helper.mutation_number):
+                    if genotypes1[i1][j] == genotypes2[i2][j]:
+                        tmp += 1
+                if tmp > best_sim_line:
+                    best_sim_line = tmp
+
+            uguali += best_sim_line
+
+
+        totali = max((len(genotypes1) * len(genotypes1[0])), (len(genotypes2) * len(genotypes2[0])))
+        sim = 1 - uguali / totali  #distanza relativa, cioè in percentuale
+
+        return sim
+
+
 
     def distance(self, helper, tree):
         """
@@ -417,15 +458,15 @@ class Node(Tree):
             sum = 0 + 0 + 1 + 0 = 1
         """
 
-        clade1_genotype = [0] * helper.mutations
-        clade2_genotype = [0] * helper.mutations
+        clade1_genotype = [0] * helper.mutation_number
+        clade2_genotype = [0] * helper.mutation_number
         common = 0
 
         # ignoring back mutations
         clade1.get_genotype_profile(clade1_genotype)
         clade2.get_genotype_profile(clade2_genotype)
 
-        for m in range(helper.mutations):
+        for m in range(helper.mutation_number):
             if clade1_genotype[m] == clade2_genotype[m] == 1:
                 common += 1
         return common
