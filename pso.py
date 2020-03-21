@@ -335,14 +335,14 @@ def particle_iteration_4(it, p, helper):
     result = -1
     ops = list(range(2, Op.NUMBER))
 
-    if it > 0 :
+    if it > 0:
 
         particle_distance = tree_copy.phylogeny.distanza(helper, p.best)
         swarm_distance = tree_copy.phylogeny.distanza(helper, helper.best_particle.best)
 
 
         #self movement
-        n_operations = int(round(50 * p.velocity)+1)
+        n_operations = int(round(p.velocity))
         # print("self operations: "+str(n_operations))
         for i in range(n_operations):
             op = ops[random.randint(0, len(ops) - 1)]
@@ -386,36 +386,74 @@ def particle_iteration_4(it, p, helper):
 
 
 
-        # print("curr velocity = " + str(p.velocity))
-        # print("next self = " + str(helper.w*p.velocity))
+        # # print("curr velocity = " + str(p.velocity))
+        # # print("next self = " + str(helper.w*p.velocity))
+        #
+        #
+        # # print("new_particle_distance = " + str(new_particle_distance))
+        # # print("new_swarm_distance  =   " + str(new_swarm_distance))
+        #
+        # self_factor = helper.w * p.velocity
+        # particle_factor = helper.c1 * new_particle_distance
+        # swarm_factor = helper.c2 * new_swarm_distance
+        #
+        #
+        #
+        #
+        #
+        # if self_factor + particle_factor + swarm_factor < (p.velocity-0.005):
+        #     p.velocity -= 0.005
+        # elif self_factor + particle_factor + swarm_factor > (p.velocity+0.005):
+        #     p.velocity += 0.005
+        #
+        # # p.velocity = self_factor + particle_factor + swarm_factor
+        #
+        # if p.velocity > 0.06:
+        #     p.velocity = 0.06
+        # if p.velocity < 0.0:
+        #     p.velocity = 0.0
+        #
+        # print("next = " + str(p.velocity))
+        #
+        # # print("self_factor:     " + str(self_factor))
+        # # print("particle_factor: " + str(particle_factor))
+        # # print("swarm_factor:    " + str(swarm_factor))
+        # # print("\n")
 
 
-        # print("new_particle_distance = " + str(new_particle_distance))
-        # print("new_swarm_distance  =   " + str(new_swarm_distance))
 
-        self_factor = helper.w * p.velocity
-        particle_factor = helper.c1 * new_particle_distance
-        swarm_factor = helper.c2 * new_swarm_distance
+        diff_p = 0
+        diff_s = 0
+        if p.best_particle_distance == 0 and p.best_swarm_distance == 0:
+            p.best_particle_distance = new_particle_distance
+            p.best_swarm_distance = new_swarm_distance
+        else:
+            diff_p = p.best_particle_distance - new_particle_distance
+            diff_s = p.best_swarm_distance - new_swarm_distance
+            p.best_particle_distance = new_particle_distance
+            p.best_swarm_distance = new_swarm_distance
 
 
-        if self_factor + particle_factor + swarm_factor < (p.velocity-0.005):
-            p.velocity -= 0.005
-        elif self_factor + particle_factor + swarm_factor > (p.velocity+0.005):
-            p.velocity += 0.005
+        change = 0
+        if diff_p > 0:
+            change += 0.2 * helper.c1
+        elif diff_p < 0:
+            change -= 0.2 * helper.c1
+        if diff_s > 0:
+            change += 0.2 * helper.c2
+        elif diff_s < 0:
+            change -= 0.2 * helper.c2
 
-        # p.velocity = self_factor + particle_factor + swarm_factor
+        p.velocity += change * (1 - helper.w)
 
-        if p.velocity > 0.06:
-            p.velocity = 0.06
-        if p.velocity < 0.0:
-            p.velocity = 0.0
+        if p.velocity > 3:
+            p.velocity = 3.0
+        elif p.velocity < 1:
+            p.velocity = 1.0
 
-        print("next = " + str(p.velocity))
+        print("vel: "+str(p.velocity))
 
-        # print("self_factor:     " + str(self_factor))
-        # print("particle_factor: " + str(particle_factor))
-        # print("swarm_factor:    " + str(swarm_factor))
-        # print("\n")
+
 
     return it, result, p, tree_copy, start_time
 
@@ -464,8 +502,8 @@ def pso(nparticles, iterations, matrix):
 
     data.pso_start = time.time()
 
-    single_core_run(helper, data, particles, iterations)
-    # parallel_run(helper, data, particles, iterations)
+    # single_core_run(helper, data, particles, iterations)
+    parallel_run(helper, data, particles, iterations)
 
     data.pso_end = time.time()
 
@@ -476,7 +514,7 @@ def single_core_run(helper, data, particles, iterations):
     for it in range(iterations):
         start_it = time.time()
 
-        print("------- Iteration %d -------" % it)
+        print("\n------->  Iteration (%d)  <-------" % it)
         for p in particles:
             # if it == 20 and p.number == 20:
             #     p.current_tree.debug = True
@@ -484,16 +522,13 @@ def single_core_run(helper, data, particles, iterations):
             helper.w -= (10000)/((10000+Tree.greedy_loglikelihood(helper, helper.best_particle.best))*iterations)
             # helper.w -= 0.2/(iterations)
 
-            # cb_particle_iteration(particle_iteration_hill(it, p, helper)) # done!
-            # cb_particle_iteration(particle_iteration_hill_2(it, p, helper))
-            # cb_particle_iteration(particle_iteration_clades(it, p, helper))
         data.best_iteration_likelihoods.append(helper.best_particle.best.likelihood)
         data.iteration_times.append(data._passed_seconds(start_it, time.time()))
 
 
 def parallel_run(helper, data, particles, iterations):
     for it in range(iterations):
-        print(mytime() + "------- Iteration %d -------" % it)
+        print("\n------->  Iteration (%d)  <-------" % it)
 
         start_it = time.time()
 
@@ -502,9 +537,6 @@ def parallel_run(helper, data, particles, iterations):
         for p in particles:
             processes.append(pool.apply_async(particle_iteration_4, args=(it, p, helper), callback=cb_particle_iteration))
             helper.w -= (10000)/((10000+Tree.greedy_loglikelihood(helper, helper.best_particle.best))*iterations)
-            # processes.append(pool.apply_async(particle_iteration_hill, args=(it, p, helper), callback=cb_particle_iteration))
-            # processes.append(pool.apply_async(particle_iteration_hill_2, args=(it, p, helper), callback=cb_particle_iteration))
-            # processes.append(pool.apply_async(particle_iteration_clades, args=(it, p, helper), callback=cb_particle_iteration))
 
         # before starting a new iteration we wait for every process to end
         # for p in processes:

@@ -11,7 +11,9 @@ class Particle(object):
         # best tree with the best likelihood so far
         self.best = self.current_tree
         self.climb_probability = 1.0
-        self.velocity = 0.04
+        self.velocity = 2
+        self.best_particle_distance = 0
+        self.best_swarm_distance = 0
 
 
     def __repr__(self):
