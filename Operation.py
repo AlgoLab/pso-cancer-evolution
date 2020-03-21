@@ -62,9 +62,9 @@ class Operation(object):
             return 2
 
         # selecting one random ancestor, based on gamma probabilities
-        trovato = False
         i = 0
         r.shuffle(candidates)
+        trovato = False
         while not(trovato) and i < len(candidates):
             candidate = candidates[i]
             rand = r.random()

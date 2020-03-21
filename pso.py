@@ -334,17 +334,16 @@ def particle_iteration_4(it, p, helper):
     tree_copy = p.current_tree.copy()
     result = -1
     ops = list(range(2, Op.NUMBER))
-    n_operations = 200
 
     if it > 0 :
 
-        distance_particle = tree_copy.phylogeny.distanza(helper, p.best)
-        distance_swarm = tree_copy.phylogeny.distanza(helper, helper.best_particle.best)
+        particle_distance = tree_copy.phylogeny.distanza(helper, p.best)
+        swarm_distance = tree_copy.phylogeny.distanza(helper, helper.best_particle.best)
 
 
         #self movement
-        n_operations = int(round(n_operations * p.velocity))
-        print("self operations: "+str(n_operations))
+        n_operations = int(round(50 * p.velocity)+1)
+        # print("self operations: "+str(n_operations))
         for i in range(n_operations):
             op = ops[random.randint(0, len(ops) - 1)]
             result = Op.tree_operation(helper, tree_copy, op)
@@ -353,55 +352,65 @@ def particle_iteration_4(it, p, helper):
 
 
         # movement to best swarm
-        new_distance_particle = 0.0
-        if distance_particle > 0:
+        new_particle_distance = 0.0
+        if particle_distance > 0:
+            offset = 0.15 * helper.c1
             particle_movement = 0.0
-            offset = 0.03
             while particle_movement < offset and offset > 0:
                 temp = tree_copy.copy()
                 op = ops[random.randint(0, len(ops) - 1)]
                 result = Op.tree_operation(helper, temp, op)
-                new_distance_particle = temp.phylogeny.distanza(helper, p.best)
-                particle_movement = distance_particle - new_distance_particle
-                # print(str(distance_particle) + " - " + str(new_distance_particle) + " = " + str(particle_movement))
-                offset -= 0.005
+                new_particle_distance = temp.phylogeny.distanza(helper, p.best)
+                particle_movement = particle_distance - new_particle_distance
+                offset -= 0.03 * helper.c1
             if particle_movement < offset:
                 # print(mytime() + "/// Movement to best particle: " + str(p.number) + ", done operation: " + str(op))
                 tree_copy = temp.copy()
 
 
         # movement to best swarm
-        new_distance_swarm = 0.0
-        if distance_swarm > 0:
-            offset = 0.03
+        new_swarm_distance = 0.0
+        if swarm_distance > 0:
+            offset = 0.15 * helper.c2
             swarm_movement = 0.0
             while swarm_movement < offset and offset > 0:
                 temp = tree_copy.copy()
                 op = ops[random.randint(0, len(ops) - 1)]
                 result = Op.tree_operation(helper, temp, op)
-                new_distance_swarm = temp.phylogeny.distanza(helper, helper.best_particle.best)
-                swarm_movement = distance_swarm - new_distance_swarm
-                # print(str(distance_swarm) + " - " + str(new_distance_swarm) + " = " + str(swarm_movement))
-                offset -= 0.05
+                new_swarm_distance = temp.phylogeny.distanza(helper, helper.best_particle.best)
+                swarm_movement = swarm_distance - new_swarm_distance
+                offset -= 0.03 * helper.c2
             if swarm_movement < offset:
                 # print(mytime() + "/// Movement to best swarm: " + str(p.number) + ", done operation: " + str(op))
                 tree_copy = temp.copy()
 
 
 
-        # print("curr self = " + str(p.velocity))
+        # print("curr velocity = " + str(p.velocity))
         # print("next self = " + str(helper.w*p.velocity))
 
-        self_factor = helper.w * p.velocity
-        particle_factor = helper.c1 * random.random() * new_distance_particle
-        swarm_factor = helper.c2 * random.random() * new_distance_swarm
 
-        p.velocity = self_factor + particle_factor + swarm_factor
-        if p.velocity*200 > 4.4:
-            p.velocity = 4.4 / 200
-        elif p.velocity < 0:
+        # print("new_particle_distance = " + str(new_particle_distance))
+        # print("new_swarm_distance  =   " + str(new_swarm_distance))
+
+        self_factor = helper.w * p.velocity
+        particle_factor = helper.c1 * new_particle_distance
+        swarm_factor = helper.c2 * new_swarm_distance
+
+
+        if self_factor + particle_factor + swarm_factor < (p.velocity-0.005):
+            p.velocity -= 0.005
+        elif self_factor + particle_factor + swarm_factor > (p.velocity+0.005):
+            p.velocity += 0.005
+
+        # p.velocity = self_factor + particle_factor + swarm_factor
+
+        if p.velocity > 0.06:
+            p.velocity = 0.06
+        if p.velocity < 0.0:
             p.velocity = 0.0
-        # print("next = " + str(p.velocity))
+
+        print("next = " + str(p.velocity))
 
         # print("self_factor:     " + str(self_factor))
         # print("particle_factor: " + str(particle_factor))
@@ -437,10 +446,12 @@ def pso(nparticles, iterations, matrix):
     data.initialization_start = time.time()
 
     # parallelizing tree initialization
+    print("Starting trees:")
     processes = []
     for i, p in enumerate(particles):
         processes.append(pool.apply_async(init_particle, args=(i, p, helper), callback=cb_init_particle))
-
+        print(" --- " + str(p.number) + ": " + str(Tree.greedy_loglikelihood(helper, p.current_tree)))
+    print("")
     pool.close()
     pool.join()
 
@@ -453,8 +464,8 @@ def pso(nparticles, iterations, matrix):
 
     data.pso_start = time.time()
 
-    # single_core_run(helper, data, particles, iterations)
-    parallel_run(helper, data, particles, iterations)
+    single_core_run(helper, data, particles, iterations)
+    # parallel_run(helper, data, particles, iterations)
 
     data.pso_end = time.time()
 
@@ -470,6 +481,9 @@ def single_core_run(helper, data, particles, iterations):
             # if it == 20 and p.number == 20:
             #     p.current_tree.debug = True
             cb_particle_iteration(particle_iteration_4(it, p, helper))
+            helper.w -= (10000)/((10000+Tree.greedy_loglikelihood(helper, helper.best_particle.best))*iterations)
+            # helper.w -= 0.2/(iterations)
+
             # cb_particle_iteration(particle_iteration_hill(it, p, helper)) # done!
             # cb_particle_iteration(particle_iteration_hill_2(it, p, helper))
             # cb_particle_iteration(particle_iteration_clades(it, p, helper))
@@ -487,7 +501,7 @@ def parallel_run(helper, data, particles, iterations):
         processes = []
         for p in particles:
             processes.append(pool.apply_async(particle_iteration_4, args=(it, p, helper), callback=cb_particle_iteration))
-            helper.w -= 0.1/(iterations)
+            helper.w -= (10000)/((10000+Tree.greedy_loglikelihood(helper, helper.best_particle.best))*iterations)
             # processes.append(pool.apply_async(particle_iteration_hill, args=(it, p, helper), callback=cb_particle_iteration))
             # processes.append(pool.apply_async(particle_iteration_hill_2, args=(it, p, helper), callback=cb_particle_iteration))
             # processes.append(pool.apply_async(particle_iteration_clades, args=(it, p, helper), callback=cb_particle_iteration))

@@ -11,12 +11,12 @@ Options:
     -h --help                               Shows this screen.
     -v --version                            Shows version.
     -i infile --infile infile               Matrix input file.
-    --mutfile mutfile                       Path of the mutation names. If this parameter is not used, then the mutations will be named progressively from 1 to mutations.
+    -m mutfile --mutfile mutfile            Path of the mutation names. If this parameter is not used, then the mutations will be named progressively from 1 to mutations.
     -p particles --particles particles      Number of particles to use for PSO [default: 5].
     -t iterations --iterations iterations   Number of iterations [default: 3].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
-    --gamma=<gamma>                         Loss probability for each mutations [default: 1].
+    --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
     --w=<w>                                 Inertia factor [default: 0.5].
     --c1=<c1>                               Learning factor for particle best [default: 0.25].
     --c2=<c2>                               Learning factor for swarm best [default: 0.75].
@@ -60,10 +60,6 @@ def main(argv):
 
     mutation_names = read_mutation_names(arguments['--mutfile'], mutation_number)
     gamma = read_gamma(arguments['--gamma'], mutation_number)
-
-
-    if max_deletions == mutation_number:
-        raise Exception("Cannot have same possibile losses as mutations")
 
 
     matrix = matrix.tolist()

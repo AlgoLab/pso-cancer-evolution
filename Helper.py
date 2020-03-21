@@ -16,9 +16,6 @@ class Helper(object):
         self.w = w/somma
         self.c1 = c1/somma
         self.c2 = c2/somma
-        # self.w = w
-        # self.c1 = c1
-        # self.c2 = c2
 
 
 

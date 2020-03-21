@@ -107,7 +107,7 @@ class Tree(object):
         """ Generates a random binary tree """
         root = cls.germline_node()
         rantree = cls.generate_tree(mutations)
-        print(rantree)
+        # print(rantree)
 
         nodes = [root]
         append_node = 0
