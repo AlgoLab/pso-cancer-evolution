@@ -130,15 +130,15 @@ class Operation(object):
 
     @classmethod
     def switch_nodes(cls, helper, tree):
-        cached_nodes = tree.phylogeny.get_cached_content()
-        keys = list(cached_nodes.keys())
+        nodes = tree.phylogeny.get_cached_content()
+        keys = list(nodes.keys())
 
         u = None
         while (u == None or u.up == None or u.loss):
             u = r.choice(keys)
             keys.remove(u)
         v = None
-        keys = list(cached_nodes.keys())
+        keys = list(nodes.keys())
         while (v == None or v.up == None or v.loss or u.name == v.name):
             v = r.choice(keys)
             keys.remove(v)
@@ -149,6 +149,7 @@ class Operation(object):
         u.fix_for_losses(helper, tree)
         v.fix_for_losses(helper, tree)
         return 0
+
 
     @classmethod
     def prune_regraft(cls, helper, tree):
@@ -172,6 +173,7 @@ class Operation(object):
         u.fix_for_losses(helper, tree)
 
         return 0
+
 
     @classmethod
     def prob(cls, I, E, genotypes, helper, particle, data=None):

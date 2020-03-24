@@ -8,12 +8,9 @@ class Particle(object):
         # tree linked list
         self.current_tree = Tree.random(cells, mutations, mutation_names)
         self.number = number
-        # best tree with the best likelihood so far
+        # best tree found by this particle
         self.best = self.current_tree
-        self.climb_probability = 1.0
-        self.velocity = 2
-        self.best_particle_distance = 0
-        self.best_swarm_distance = 0
+        self.velocity = 3
 
 
     def __repr__(self):

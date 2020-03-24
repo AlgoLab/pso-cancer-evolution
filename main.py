@@ -17,9 +17,9 @@ Options:
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
     --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
-    --w=<w>                                 Inertia factor [default: 0.5].
-    --c1=<c1>                               Learning factor for particle best [default: 0.25].
-    --c2=<c2>                               Learning factor for swarm best [default: 0.75].
+    --w=<w>                                 Inertia factor [default: 1].
+    --c1=<c1>                               Learning factor for particle best [default: 1].
+    --c2=<c2>                               Learning factor for swarm best [default: 1].
     --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
     --maxdel=<max_deletions>                Maximum number of total deletions allowed [default: 10].
 """
@@ -28,12 +28,9 @@ import io
 import sys
 import os
 import copy
-
 import numpy as np
 from docopt import docopt
-
 import matplotlib.pyplot as plt
-
 from Data import Data
 import pso
 from datetime import datetime
@@ -53,8 +50,10 @@ def main(argv):
     max_deletions = int(arguments['--maxdel'])
     runs = list(map(int, arguments['<runptcl>']))
 
-    matrix = read_matrix(arguments['--infile'])
+    if iterations <= 0:
+        raise Exception("Cannot have iterations <= 0!")
 
+    matrix = read_matrix(arguments['--infile'])
     mutation_number = matrix.shape[1]
     cells = matrix.shape[0]
 
@@ -114,7 +113,7 @@ def read_gamma(path, mutation_number):
     except ValueError:
         with open(gamma) as f:
             tmp = [float(l.strip()) for l in f.readlines()]
-            if len(tmp) != mutatio_number:
+            if len(tmp) != mutation_number:
                 raise Exception("gammas number does not match mutation names number!", len(mutation_names), mutation_number)
         gamma = tmp
     return gamma

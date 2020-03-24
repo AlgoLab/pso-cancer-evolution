@@ -45,7 +45,7 @@ $ source ./env/bin/activate
 ```
 
 
-Then install every package necessary:
+Then install every necessary package:
 
 ```shell
 (env) $ pip install numpy
@@ -60,18 +60,18 @@ Done!
 
 ## Usage
 
-**Input Parameters (required)**
+**Required input Parameters**
 - `--infile [STRING]`: Matrix input file
 
-**Input Parameters (optional)**
-- `--mutfile [STRING]`: Path of the mutation names. If this parameter is not used, then the mutations will be named progressively from 1 to mutations.
+**Optional input parameters**
+- `--mutfile [STRING]`: Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
 - `--particles [INT]`: Number of particles to use for PSO [default: 5]
 - `--iterations [INT]`: Number of iterations [default: 3].
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
 - `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
-- `--c1 [FLOAT]`: Learning factor for particle best [default: 0.25].
 - `--w [FLOAT]`: Inertia factor [default: 0.5].
+- `--c1 [FLOAT]`: Learning factor for particle best [default: 0.25].
 - `--c2 [FLOAT]`: Learning factor for swarm best [default: 0.75].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 10].

@@ -17,6 +17,8 @@ class Helper(object):
         self.c1 = c1/somma
         self.c2 = c2/somma
 
+        self.temperature = 1
+
 
 
     def max_phylogeny_mutations(self):

@@ -4,7 +4,8 @@ import random as r
 import copy
 import math
 
-lista3 = [] #per la creazione random di alberi
+# per la creazione random uniforme di alberi
+lista3 = []
 lista4 = []
 lista5 = []
 
@@ -58,6 +59,7 @@ class Tree(object):
         tree = None
         accettabile = False
 
+        attempts = 0
         while accettabile == False:
             tree = alfabeto.copy()
             r.shuffle(tree, r.random)
@@ -86,6 +88,13 @@ class Tree(object):
                 for i in range (len(tree)-lunghezza_parole+3):
                     lista3.append(tree[i:i+lunghezza_parole-2])
 
+            attempts += 1
+            if attempts == 200:
+                lista3 = []
+                lista4 = []
+                lista5 = []
+                attempts = 0
+                
         return tree
 
 

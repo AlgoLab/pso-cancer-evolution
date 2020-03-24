@@ -70,7 +70,7 @@ class Node(Tree):
                 n.delete_b(helper, tree)
 
             if n.loss:
-                if not(n.up.loss) and n.up.mutation_id == n.mutation_id and n.children == []: #mai controllato se va veramente
+                if n.up != None and not(n.up.loss) and n.up.mutation_id == n.mutation_id and n.children == []: #mai controllato se va veramente
                     n.delete_b(helper, tree)
                 if[n,n.up] in losses:
                     n.delete_b(helper, tree)
