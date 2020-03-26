@@ -94,7 +94,7 @@ class Tree(object):
                 lista4 = []
                 lista5 = []
                 attempts = 0
-                
+
         return tree
 
 

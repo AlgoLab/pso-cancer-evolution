@@ -11,9 +11,9 @@ Options:
     -h --help                               Shows this screen.
     -v --version                            Shows version.
     -i infile --infile infile               Matrix input file.
-    -m mutfile --mutfile mutfile            Path of the mutation names. If this parameter is not used, then the mutations will be named progressively from 1 to mutations.
+    -m mutfile --mutfile mutfile            Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
     -p particles --particles particles      Number of particles to use for PSO [default: 5].
-    -t iterations --iterations iterations   Number of iterations [default: 3].
+    -t iterations --iterations iterations   Number of iterations. If not used or zero, pso will stop when stuck on a best fitness value for 20 iterations (or after 3 minutes) [default: 0].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
     --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
@@ -37,6 +37,7 @@ from datetime import datetime
 
 
 def main(argv):
+    #reading arguments
     arguments = docopt(__doc__, version = "PSO-Cancer-Evolution 2.0")
 
     particles = int(arguments['--particles'])
@@ -50,18 +51,33 @@ def main(argv):
     max_deletions = int(arguments['--maxdel'])
     runs = list(map(int, arguments['<runptcl>']))
 
-    if iterations <= 0:
-        raise Exception("Cannot have iterations <= 0!")
+    #checking for errors
+    if particles < 1:
+        raise Exception("ERROR! Particles < 1")
+    if iterations < 0:
+        raise Exception("ERROR! Iterations < 0")
+    if k < 0:
+        raise Exception("ERROR! k < 0")
+    if w < 0:
+        raise Exception("ERROR! w < 0")
+    if c1 < 0:
+        raise Exception("ERROR! c1 < 0")
+    if c2 < 0:
+        raise Exception("ERROR! c2 < 0")
+    if w == 0 and c1 == 0 and c2 == 0:
+        raise Exception("ERROR! w,c1,c2 are all = 0")
+    if max_deletions < 0:
+        raise Exception("ERROR! maxdel < 0")
 
-    matrix = read_matrix(arguments['--infile'])
+
+    with open(arguments['--infile'], 'r') as f:
+        matrix =  np.atleast_2d(np.loadtxt(io.StringIO(f.read()))) # assuring that we at least have 2D array to work with
     mutation_number = matrix.shape[1]
     cells = matrix.shape[0]
+    matrix = matrix.tolist()
 
     mutation_names = read_mutation_names(arguments['--mutfile'], mutation_number)
     gamma = read_gamma(arguments['--gamma'], mutation_number)
-
-
-    matrix = matrix.tolist()
 
 
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
@@ -88,12 +104,8 @@ def main(argv):
 
 
 
-def read_matrix(path):
-    with open(path, 'r') as f:
-        # assuring that we at least have 2D array to work with
-        return np.atleast_2d(np.loadtxt(io.StringIO(f.read())))
-
-
+# reading file with mutation names, if given in input
+# generating them otherwise
 def read_mutation_names(path, mutation_number):
     if path:
         with open(path, 'r') as f:
@@ -105,6 +117,8 @@ def read_mutation_names(path, mutation_number):
     return mutation_names
 
 
+
+# reading file with gamma values or float value, if given in input
 def read_gamma(path, mutation_number):
     gamma = path
     try:

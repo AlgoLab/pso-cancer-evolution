@@ -18,6 +18,7 @@ class Helper(object):
         self.c2 = c2/somma
 
         self.temperature = 1
+        self.avg_dist = 0
 
 
 

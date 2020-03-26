@@ -267,6 +267,9 @@ class Node(Tree):
         return clades
 
 
+#------------------------------------------------------------------------------
+
+
     def distanza(self, helper, tree):
         nodes1 = self.get_cached_content()
         genotypes1 = [
@@ -276,7 +279,7 @@ class Node(Tree):
         for i, n in enumerate(nodes1):
             n.get_genotype_profile(genotypes1[i])
 
-        nodes2 = tree.phylogeny.get_cached_content()
+        nodes2 = tree.get_cached_content()
         genotypes2 = [
             [0 for j in range(helper.mutation_number)]
             for i in range(len(nodes2))
@@ -303,6 +306,42 @@ class Node(Tree):
         sim = 1 - uguali / totali  #distanza relativa, cioè in percentuale
 
         return sim
+
+
+    def get_clade_by_distance(self, helper, distance, it):
+
+        diff = 10 * (distance - helper.avg_dist)
+        if diff > 1:
+            diff = 1
+        elif diff < -1:
+            diff = -1
+        diff = (diff+1)/2
+
+        # update average distance
+        helper.avg_dist = (helper.avg_dist * it + distance) / (it + 1)
+
+        nodes = list(self.get_cached_content().keys())
+        max_h = max([n.get_height() for n in nodes])
+        most_likely_level = int(diff * (max_h - 2)) + 1
+
+        # print("diff ="+str(diff))
+        # print("level="+str(level))
+
+        possible = [x for x in range(1, max_h)]
+        possible.append(most_likely_level)
+        possible.append(most_likely_level)
+        possible.append(most_likely_level)
+        possible.append(most_likely_level)
+        level = random.choice(possible)
+
+        random.shuffle(nodes)
+        for n in nodes:
+            if n.get_height() == level:
+                return n
+
+
+
+#------------------------------------------------------------------------------
 
 
 
