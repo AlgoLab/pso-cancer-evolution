@@ -15,6 +15,8 @@ class Data(object):
         self.starting_likelihood = 0
 
         self.nofparticles = nofparticles
+        if iterations == 0:
+            iterations = 500
         self.iterations = iterations
         self.particle_iteration_times = [[] for p in range(nofparticles)]
         self.iteration_times = []
@@ -94,6 +96,11 @@ class Data(object):
 
     def _passed_seconds(self, start, end):
         return end - start
+
+    def set_iterations(self, iterations):
+        self.iterations = iterations
+        self.iteration_new_particle_best = self.iteration_new_particle_best[0:iterations]
+        self.iteration_new_best = self.iteration_new_best[0:iterations]
 
     def summary(self, helper, dir):
         Tree.greedy_loglikelihood(helper, helper.best_particle.best, self)

@@ -486,8 +486,8 @@ def pso(nparticles, iterations, matrix):
 
     data.pso_start = time.time()
 
-    single_core_run(helper, data, particles, iterations)
-    # parallel_run(helper, data, particles, iterations)
+    # single_core_run(helper, data, particles, iterations)
+    parallel_run(helper, data, particles, iterations)
 
     data.pso_end = time.time()
 
@@ -506,6 +506,11 @@ def single_core_run(helper, data, particles, iterations):
     print("\n2) PSO RUNNING...        ")
     print("\t\tIteration:\tBest likelihood so far:")
     print("\t\t    /\t\t     " + str(round(old_lh, 2)))
+
+    automatic_stop = False
+    if iterations == 0:
+        iterations = 500
+        automatic_stop = True
 
     for it in range(iterations):
         start_it = time.time()
@@ -527,8 +532,9 @@ def single_core_run(helper, data, particles, iterations):
         data.best_iteration_likelihoods.append(lh)
         data.iteration_times.append(data._passed_seconds(start_it, time.time()))
 
-        # if time.time() - data.pso_start > 10:
-        #     break
+        if automatic_stop and time.time() - data.pso_start > 180:
+            data.set_iterations(it)
+            break
 
 
 
@@ -542,6 +548,13 @@ def parallel_run(helper, data, particles, iterations):
     print("\t\tIteration:\tBest likelihood so far:")
     print("\t\t    /\t\t     " + str(round(old_lh, 2)))
 
+    automatic_stop = False
+    if iterations == 0:
+        iterations = 500
+        automatic_stop = True
+
+    same_lh = 0
+
     for it in range(iterations):
         start_it = time.time()
         pool = mp.Pool(mp.cpu_count())
@@ -553,8 +566,10 @@ def parallel_run(helper, data, particles, iterations):
         lh = helper.best_particle.best.likelihood
         if lh > old_lh:
             print("\t\t    " + str(it) + "\t\t     " + str(round(lh, 2)))
+            same_lh = 0
         else:
             print("\t\t    " + str(it) + "\t\t       \"")
+            same_lh += 1
         old_lh = lh
 
         helper.w -= initial_w/iterations
@@ -566,8 +581,9 @@ def parallel_run(helper, data, particles, iterations):
         data.best_iteration_likelihoods.append(helper.best_particle.best.likelihood)
         data.iteration_times.append(data._passed_seconds(start_it, time.time()))
 
-        # if time.time() - data.pso_start > 10:
-        #     break
+        if automatic_stop and (same_lh == 20 or time.time() - data.pso_start > 180):
+            data.set_iterations(it)
+            break
 
     # Adding backmutations
     print("\n3) ADDING BACKMUTATIONS...   ")
