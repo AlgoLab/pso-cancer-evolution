@@ -13,21 +13,14 @@ DONE:
 - fixed wrong k and added max deletions
 - added gamma rates (single and multiple from file)
 - changed clade attachment algorithm and changed particle iteration
-- added stopping critera if iterations not in input
+- added stopping criteria if iterations not in input
 
 
 TODO:
-- fare test su c1 e c2
-- capire cos'è questo sigma da fare
-- capire perché s.a. ha likelihood iniziale così bassa
-- implementare multipli fn rates da file
-
+----> fare test su c1 e c2
 ----> analizzare multiple runptcl argument
 ----> capire cos'è max_clades
-----> capire perché in docopt hanno formati diversi alcune cose
 ----> fare in modo che addmutations finale usi cb_particle_iteration, e sistemare la dimensione di quell'array che usa il numero delle iterazioni
 ----> sistemare l'output di backmutations
 ----> ottimizzare tutto
 ----> parallelize everything???? isn't it already???
-----> far diventare anche l'adding backmutations in pso ???
-----> sistemare l'algo nuovo

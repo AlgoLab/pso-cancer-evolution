@@ -101,20 +101,7 @@ class Operation(object):
         # current.fix_useless_losses(helper, tree)
         tree.operation = cls(cls.BACK_MUTATION, node_name_1=candidate.name, node_name_2=node_deletion.name)
 
-        # Operation.update_losses_list(tree)
-
         return 0
-
-
-    @classmethod
-    def update_losses_list(cls, tree):
-        tree.k_losses_list = numpy.multiply(tree.k_losses_list, 0)
-        tree.losses_list = []
-        nodes = tree.phylogeny.get_cached_content()
-        for n in nodes:
-            if n.loss:
-                tree.losses_list.append(n)
-                tree.k_losses_list[n.mutation_id] += 1
 
 
     @classmethod

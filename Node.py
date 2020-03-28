@@ -50,33 +50,33 @@ class Node(Tree):
                     self.delete(prevent_nondicotomic=False)
 
 
-    def fix_useless_losses(self, helper, tree):
+    def my_fix_for_losses(self, helper, tree):
         """
-        Deletes loss nodes that:
-         - don't inherit any mutations
-         - are duplicates of other nodes
+        Deletes loss nodes that are:
+         - not valid
+         - already lost
+         - duplicates of other nodes
         """
+        # tree.phylogeny.update_losses_list(helper, tree)
+        if helper.k == 0:
+            return
         nodes = self.get_cached_content()
-        mutations = []
-        losses = []
-        s = 0
+        # losses = []
         for n in nodes:
-            n_genotype = [0] * helper.mutation_number
-            n.get_genotype_profile(n_genotype)
-            sum_ = 0
-            for m in n_genotype:
-                sum_ += m
-            if sum_ == 0 and str(n) != "germline" and n.children != []:
-                n.delete_b(helper, tree)
 
-            if n.loss:
-                if n.up != None and not(n.up.loss) and n.up.mutation_id == n.mutation_id and n.children == []: #mai controllato se va veramente
+            if n.loss and n in tree.losses_list:
+                valid = n.is_loss_valid()
+                lost = n.is_mutation_already_lost(n.mutation_id, k=helper.k)
+                if (not valid) or lost:
                     n.delete_b(helper, tree)
-                if[n,n.up] in losses:
-                    n.delete_b(helper, tree)
-                else:
-                    losses.append([n,n.up])
 
+            # if n.loss:
+            #     if n.up != None and not(n.up.loss) and n.up.mutation_id == n.mutation_id and n.children == []: #mai controllato se va veramente
+            #         n.delete_b(helper, tree)
+            #     if[n,n.up] in losses:
+            #         n.delete_b(helper, tree)
+            #     else:
+            #         losses.append([n,n.up])
 
     def delete_b(self, helper, tree):
         if self in tree.losses_list:
@@ -97,7 +97,7 @@ class Node(Tree):
         if mutation_id is None:
             mutation_id = self.mutation_id
         for par in self.iter_ancestors():
-            if par.mutation_id == mutation_id:
+            if (not par.loss) and par.mutation_id == mutation_id:
                 return True
         return False
 
@@ -270,23 +270,16 @@ class Node(Tree):
 #------------------------------------------------------------------------------
 
 
-    def distanza(self, helper, tree):
+    def my_distance(self, helper, tree):
         nodes1 = self.get_cached_content()
-        genotypes1 = [
-            [0 for j in range(helper.mutation_number)]
-            for i in range(len(nodes1))
-        ]
+        genotypes1 = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes1))]
         for i, n in enumerate(nodes1):
             n.get_genotype_profile(genotypes1[i])
 
         nodes2 = tree.get_cached_content()
-        genotypes2 = [
-            [0 for j in range(helper.mutation_number)]
-            for i in range(len(nodes2))
-        ]
+        genotypes2 = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes2))]
         for i, n in enumerate(nodes2):
             n.get_genotype_profile(genotypes2[i])
-
 
         uguali = 0
         for i1 in range(len(nodes1)):
@@ -298,17 +291,15 @@ class Node(Tree):
                         tmp += 1
                 if tmp > best_sim_line:
                     best_sim_line = tmp
-
             uguali += best_sim_line
 
-
         totali = max((len(genotypes1) * len(genotypes1[0])), (len(genotypes2) * len(genotypes2[0])))
-        sim = 1 - uguali / totali  #distanza relativa, cioè in percentuale
+        sim = 1 - uguali / totali  #distanza relativa, percentuale
 
         return sim
 
 
-    def get_clade_by_distance(self, helper, distance, it):
+    def get_clade_by_distance(self, helper, distance, it, type):
 
         diff = 10 * (distance - helper.avg_dist)
         if diff > 1:
@@ -328,10 +319,13 @@ class Node(Tree):
         # print("level="+str(level))
 
         possible = [x for x in range(1, max_h)]
-        possible.append(most_likely_level)
-        possible.append(most_likely_level)
-        possible.append(most_likely_level)
-        possible.append(most_likely_level)
+        if type == "particle":
+            factor = helper.c1
+        else:
+            factor = helper.c2
+
+        for i in range(int(random.random() * factor * 10)):
+            possible.append(most_likely_level)
         level = random.choice(possible)
 
         random.shuffle(nodes)
@@ -432,15 +426,15 @@ class Node(Tree):
 
     def attach_clade(self, helper, tree, clade):
         "Remove every node already in clade"
-        root = self.get_tree_root()
-        nodes_list = root.get_cached_content()
-        # clade.fix_for_losses(helper, tree, delete_only=True)
-        clade_nodes = clade.get_cached_content()
-        clade_to_attach = self
-        for cln in clade_nodes:
+
+        nodes_list = self.get_tree_root().get_cached_content()
+        clade_to_be_attached = clade.get_cached_content()
+        clade_destination = self
+
+        for cln in clade_to_be_attached:
             removed = []
             if cln.loss:
-                if clade_to_attach.is_mutation_already_lost(cln.mutation_id):
+                if clade_destination.is_mutation_already_lost(cln.mutation_id):
                     cln.delete(prevent_nondicotomic=False)
                 else:
                     tree.losses_list.append(cln)
@@ -449,14 +443,30 @@ class Node(Tree):
                 for n in nodes_list:
                     if n.mutation_id != -1 and cln.mutation_id == n.mutation_id and not n.loss:
                         # moving up
-                        if clade_to_attach == n:
-                            clade_to_attach = n.up
+                        if clade_destination == n:
+                            clade_destination = n.up
 
                         n.delete(prevent_nondicotomic=False)
                         removed.append(n)
+
             for r in removed:
                 nodes_list.pop(r)
-        clade_to_attach.add_child(clade)
+
+        clade_destination.add_child(clade)
+
+
+
+    def update_losses_list(self, helper, tree):
+        l = []
+        kl = [0] * helper.mutation_number
+        nodes = tree.phylogeny.get_cached_content()
+        for n in nodes:
+            if n.loss:
+                l.append(n)
+                kl[n.mutation_id] += 1
+        tree.losses_list = l
+        tree.k_losses_list = kl
+
 
 
     def attach_clade_and_fix(self, helper, tree, clade):

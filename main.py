@@ -12,8 +12,8 @@ Options:
     -v --version                            Shows version.
     -i infile --infile infile               Matrix input file.
     -m mutfile --mutfile mutfile            Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-    -p particles --particles particles      Number of particles to use for PSO [default: 5].
-    -t iterations --iterations iterations   Number of iterations. If not used or zero, pso will stop when stuck on a best fitness value for 20 iterations (or after 3 minutes) [default: 0].
+    -p particles --particles particles      Number of particles to use for PSO [default: 0].
+    -t iterations --iterations iterations   Number of iterations. If not used or zero, pso will stop when stuck on a best fitness value (or after around 2 minutes of total execution) [default: 0].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
     --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
@@ -52,8 +52,8 @@ def main(argv):
     runs = list(map(int, arguments['<runptcl>']))
 
     #checking for errors
-    if particles < 1:
-        raise Exception("ERROR! Particles < 1")
+    if particles < 0:
+        raise Exception("ERROR! Particles < 0")
     if iterations < 0:
         raise Exception("ERROR! Iterations < 0")
     if k < 0:

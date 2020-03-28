@@ -38,9 +38,13 @@ while maximum iterations or minimum error criteria is not attained
 
 ## Setup
 
-I recommend creating a `virtualenv` with `python3`, because that's what I used:
+I recommend creating a `virtualenv` with `python3`, because that's what I used (just the 1st time):
 ```shell
 $ virtualenv env -p `which python3`
+```
+
+Then activate the virtual environment:
+```shell
 $ source ./env/bin/activate
 ```
 
@@ -66,7 +70,7 @@ Done!
 **Optional input parameters**
 - `--mutfile [STRING]`: Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
 - `--particles [INT]`: Number of particles to use for PSO [default: 5]
-- `--iterations [INT]`: Number of iterations. If not used or zero, pso will stop when stuck on a best fitness value for 20 iterations (or after 3 minutes) [default: 0].
+- `--iterations [INT]`: Number of iterations. If not used or zero, pso will stop when stuck on a best fitness value (or after around 2 minutes of total execution) [default: 0].
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
 - `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
