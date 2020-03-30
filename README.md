@@ -38,7 +38,7 @@ while maximum iterations or minimum error criteria is not attained
 
 ## Setup
 
-I recommend creating a `virtualenv` with `python3`, because that's what I used (just the 1st time):
+I recommend creating a `virtualenv` with `python3` (just for the 1st time):
 ```shell
 $ virtualenv env -p `which python3`
 ```
@@ -48,9 +48,7 @@ Then activate the virtual environment:
 $ source ./env/bin/activate
 ```
 
-
-Then install every necessary package:
-
+Lastly, install every necessary package:
 ```shell
 (env) $ pip install numpy
 (env) $ pip install graphviz
@@ -69,8 +67,8 @@ Done!
 
 **Optional input parameters**
 - `--mutfile [STRING]`: Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-- `--particles [INT]`: Number of particles to use for PSO [default: 5]
-- `--iterations [INT]`: Number of iterations. If not used or zero, pso will stop when stuck on a best fitness value (or after around 2 minutes of total execution) [default: 0].
+- `--particles [INT]`: Number of particles to use for PSO. If not used or zero, it will be estimated based on the number of particles and cells [default: 0]
+- `--iterations [INT]`: Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after around 2 minutes of total execution) [default: 0].
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
 - `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
@@ -79,6 +77,8 @@ Done!
 - `--c2 [FLOAT]`: Learning factor for swarm best [default: 1].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 10].
+- `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
+- `--parallel [BOOLEAN]`: Multi-core execution [default: True].
 
 ## Example
 

@@ -1,9 +1,8 @@
-# -*- coding:utf-8 -*-
 
 """Particle Swarm Optimization for Cancer Evolution
 
 Usage:
-    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--w=<w>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...]
+    main.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--w=<w>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...] [--parallel=<parallel>]
     main.py -h | --help
     main.py -v | --version
 
@@ -12,8 +11,8 @@ Options:
     -v --version                            Shows version.
     -i infile --infile infile               Matrix input file.
     -m mutfile --mutfile mutfile            Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-    -p particles --particles particles      Number of particles to use for PSO [default: 0].
-    -t iterations --iterations iterations   Number of iterations. If not used or zero, pso will stop when stuck on a best fitness value (or after around 2 minutes of total execution) [default: 0].
+    -p particles --particles particles      Number of particles to use for PSO. If not used or zero, it will be estimated based on the number of particles and cells [default: 0]
+    -t iterations --iterations iterations   Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after around 2 minutes of total execution) [default: 0].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
     --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
@@ -22,6 +21,7 @@ Options:
     --c2=<c2>                               Learning factor for swarm best [default: 1].
     --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
     --maxdel=<max_deletions>                Maximum number of total deletions allowed [default: 10].
+    --parallel=<parallel>                   Multi-core execution [default: True].
 """
 
 import io
@@ -49,7 +49,11 @@ def main(argv):
     c1 = float(arguments['--c1'])
     c2 = float(arguments['--c2'])
     max_deletions = int(arguments['--maxdel'])
-    runs = list(map(int, arguments['<runptcl>']))
+    if arguments['<runptcl>'] != []:
+        multiple_runs = [int(i) for i in arguments['<runptcl>']]
+    else:
+        multiple_runs = None
+    parallel = arguments['--parallel'].lower() in ['true', 't', 'yes', 'y', '1']
 
     #checking for errors
     if particles < 0:
@@ -82,24 +86,23 @@ def main(argv):
 
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
 
-    if runs:
-        runs_data = []
-        for r, ptcl in enumerate(runs):
-            print ("=== Run number %d ===" % r)
-            run_dir = base_dir + "/p%d_i%d" % (ptcl, iterations)
-            if not os.path.exists(run_dir):
-                os.makedirs(run_dir)
-            data, helper = pso.init(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions)
-            data.summary(helper, run_dir)
-            runs_data.append(data)
-        Data.runs_summary(runs, runs_data, base_dir)
-
-    else:
+    if multiple_runs is None:
         run_dir = base_dir + "/p%d_i%d" % (particles, iterations)
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
-        data, helper = pso.init(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions)
+        data, helper = pso.init(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
         data.summary(helper, run_dir)
+    else:
+        runs_data = []
+        for r, ptcl in enumerate(multiple_runs):
+            print ("\n=== Run number %d ===" % r)
+            run_dir = base_dir + "/p%d_i%d" % (ptcl, iterations)
+            if not os.path.exists(run_dir):
+                os.makedirs(run_dir)
+            data, helper = pso.init(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
+            data.summary(helper, run_dir)
+            runs_data.append(data)
+        Data.runs_summary(multiple_runs, runs_data, base_dir)
 
 
 

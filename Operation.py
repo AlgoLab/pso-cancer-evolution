@@ -59,7 +59,7 @@ class Operation(object):
         # selecting possible node candidates (every ancestor)
         candidates = [p for p in node.iter_ancestors() if (p.loss == False) and (p.mutation_id != -1)]
         if len(candidates) == 0:
-            return 2
+            return 1
 
         # selecting one random ancestor, based on gamma probabilities
         i = 0
@@ -72,25 +72,23 @@ class Operation(object):
                 trovato = True
             i += 1
         if not(trovato):
-            return 3
+            return 1
 
         # Ensuring we have no more than k mutations per mutation type
         if (tree.k_losses_list[candidate.mutation_id] >= helper.k):
-            return 4
+            return 1
 
         # If the mutation is already lost in the current tree, no way to remove it again
         if (node.is_mutation_already_lost(candidate.mutation_id)):
-            return 5
+            return 1
 
         node_deletion = Node(candidate.name, None, candidate.mutation_id, True)
 
         if (tree.k_losses_list[node_deletion.mutation_id] >= helper.k):
-            return 6
+            return 1
 
         tree.losses_list.append(node_deletion)
         tree.k_losses_list[node_deletion.mutation_id] += 1
-
-        # print("losses list: " + str(tree.losses_list))
 
         # saving parent before detaching
         par = node.up
@@ -98,9 +96,7 @@ class Operation(object):
         par.add_child(node_deletion)
         node_deletion.add_child(current)
         current.fix_for_losses(helper, tree)
-        # current.fix_useless_losses(helper, tree)
         tree.operation = cls(cls.BACK_MUTATION, node_name_1=candidate.name, node_name_2=node_deletion.name)
-
         return 0
 
 

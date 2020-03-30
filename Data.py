@@ -4,6 +4,7 @@ from matplotlib.ticker import MaxNLocator
 import random
 import sys
 import os
+
 class Data(object):
 
     def __init__(self, nofparticles, iterations):
@@ -18,12 +19,13 @@ class Data(object):
         if iterations == 0:
             iterations = 200
         self.iterations = iterations
+        self.bm_iterations = 3 * nofparticles
         self.particle_iteration_times = [[] for p in range(nofparticles)]
         self.iteration_times = []
 
         self.best_iteration_likelihoods = []
-        self.iteration_new_particle_best = [[0 for p in range(nofparticles)] for n in range(iterations)]
-        self.iteration_new_best = [[0 for p in range(nofparticles)] for n in range(iterations)]
+        self.iteration_new_particle_best = [[0 for p in range(nofparticles)] for n in range(iterations+30)]
+        self.iteration_new_best = [[0 for p in range(nofparticles)] for n in range(iterations+30)]
 
         self.true_positive = 0
         self.true_negative = 0

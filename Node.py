@@ -33,6 +33,8 @@ class Node(Tree):
     def fix_for_losses(self, helper, tree, delete_only=False):
         # saving current children list, it will change if we delete
         # the current node
+        tree.phylogeny.update_losses_list(helper, tree)
+
         if helper.k == 0:
             return
         children = [c for c in self.children]
@@ -49,34 +51,6 @@ class Node(Tree):
                 else:
                     self.delete(prevent_nondicotomic=False)
 
-
-    def my_fix_for_losses(self, helper, tree):
-        """
-        Deletes loss nodes that are:
-         - not valid
-         - already lost
-         - duplicates of other nodes
-        """
-        # tree.phylogeny.update_losses_list(helper, tree)
-        if helper.k == 0:
-            return
-        nodes = self.get_cached_content()
-        # losses = []
-        for n in nodes:
-
-            if n.loss and n in tree.losses_list:
-                valid = n.is_loss_valid()
-                lost = n.is_mutation_already_lost(n.mutation_id, k=helper.k)
-                if (not valid) or lost:
-                    n.delete_b(helper, tree)
-
-            # if n.loss:
-            #     if n.up != None and not(n.up.loss) and n.up.mutation_id == n.mutation_id and n.children == []: #mai controllato se va veramente
-            #         n.delete_b(helper, tree)
-            #     if[n,n.up] in losses:
-            #         n.delete_b(helper, tree)
-            #     else:
-            #         losses.append([n,n.up])
 
     def delete_b(self, helper, tree):
         if self in tree.losses_list:
@@ -267,9 +241,6 @@ class Node(Tree):
         return clades
 
 
-#------------------------------------------------------------------------------
-
-
     def my_distance(self, helper, tree):
         nodes1 = self.get_cached_content()
         genotypes1 = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes1))]
@@ -334,11 +305,6 @@ class Node(Tree):
                 return n
 
 
-
-#------------------------------------------------------------------------------
-
-
-
     def distance(self, helper, tree):
         """
             Calculates the distance between this tree and another.
@@ -388,18 +354,6 @@ class Node(Tree):
                 max_weight = weights[i]
                 max_weight_edge = edges[i]
         distance = max(mut_number_t1, mut_number_t2) - max_weight
-
-        # print("\nclades_t1:       "+str(clades_t1))
-        # print("\nclades_t2:       "+str(clades_t2))
-        # print("\nmutations_t1:    "+str(mutations_t1))
-        # print("mut_number_t1:     "+str(mut_number_t1))
-        # print("\nmutations_t2:    "+str(mutations_t2))
-        # print("mut_number_t2:     "+str(mut_number_t2))
-        # print("\nmax_matching:    "+str(max_matching))
-        # print("\nmatched_weights: "+str(matched_weights))
-        # print("\nmax_weight:      "+str(max_weight))
-        # print("\ndistance:         "+str(distance))
-        # print("")
 
         return distance
         # return distance, max_weight_edge

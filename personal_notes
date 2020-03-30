@@ -5,20 +5,20 @@ source ./env/bin/activate
 
 
 DONE:
-- fix for useless losses (e.g. germline -> a -> a-)
-- fix for duplicated losses
+#- fix for useless losses (e.g. germline -> a -> a-)
+#- fix for duplicated losses
 - added usage of w, c1, c2
 - added uniform random trees generation
 - added losses at the end of execution
 - fixed wrong k and added max deletions
 - added gamma rates (single and multiple from file)
 - changed clade attachment algorithm and changed particle iteration
-- added stopping criteria if iterations not in input
+- added stopping criterias if iterations not in input
+- added automatic calculation of the number of particles
 
 
 TODO:
 ----> fare test su c1 e c2
-----> analizzare multiple runptcl argument
 ----> capire cos'è max_clades
 ----> fare in modo che addmutations finale usi cb_particle_iteration, e sistemare la dimensione di quell'array che usa il numero delle iterazioni
 ----> sistemare l'output di backmutations

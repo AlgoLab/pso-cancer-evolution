@@ -2,8 +2,6 @@ import multiprocessing as mp
 import random
 import sys
 import time
-import math
-import copy
 import numpy as np
 from Helper import Helper
 from Node import Node
@@ -19,24 +17,26 @@ helper = None
 data = None
 
 
-def init(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions):
+def init(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel):
     global helper
     global particles
     global data
 
     # calculating number of particles based on number of cells and mutations
+    # todo: create a smarter algorithm
     if nparticles == 0:
-        x = 3*mutation_number+cells
+        x = 3 * mutation_number + cells
         proc = mp.cpu_count()
-        nparticles = - int(x/20) + 14 + proc
-        if nparticles < 6:
-            nparticles = 6
+        nparticles = - int(x / 20) + 14 + proc
+        if nparticles < proc:
+            nparticles = proc
 
-    helper = Helper(matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions)
+    helper = Helper(matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
     data = Data(nparticles, iterations)
     pso(nparticles, iterations, matrix)
     data.helper = helper
     return data, helper
+
 
 
 def cb_init_particle(result):
@@ -46,32 +46,58 @@ def cb_init_particle(result):
         helper.best_particle = particle
 
 def init_particle(i, particle, helper):
-    lh = Tree.greedy_loglikelihood(helper, particle.current_tree)
-    particle.current_tree.likelihood = lh
+    particle.current_tree.likelihood = Tree.greedy_loglikelihood(helper, particle.current_tree)
     return i, particle
 
 
 
-def add_back_mutations():
-    best_swarm_lh = helper.best_particle.best.likelihood
-    tree_copy = helper.best_particle.best.copy()
-
+def add_back_mutations(it, p, helper):
+    start_time = time.time()
     op = 0
+    tree_copy = p.best.copy()
     result = Op.tree_operation(helper, tree_copy, op)
-    lh = Tree.greedy_loglikelihood(helper, tree_copy)
 
+    # lh = Tree.greedy_loglikelihood(helper, tree_copy)
+    # best_swarm_lh = helper.best_particle.best.likelihood
+    #
+    # if lh > best_swarm_lh:
+    #     helper.best_particle.current_tree = tree_copy.copy()
+    #     helper.best_particle.best = helper.best_particle.current_tree
+    #     helper.best_particle.best.likelihood = lh
+    #     print("Added backmutation, new swarm best: %s" % str(round(lh, 2)))
+
+    return it, p, tree_copy, start_time
+
+
+
+def cb_backmutations(r):
+    i, p, tree_copy, start_time = r
+    particles[p.number] = p
+
+    # updating log likelihood and bests
+    lh = Tree.greedy_loglikelihood(helper, tree_copy)
+    tree_copy.likelihood = lh
+    p.current_tree = tree_copy
+
+    best_particle_lh = p.best.likelihood
+    best_swarm_lh = helper.best_particle.best.likelihood
+
+    if lh > best_particle_lh:
+        data.iteration_new_particle_best[i][p.number] = lh
+        p.best = tree_copy
 
     if lh > best_swarm_lh:
-        increased = (best_swarm_lh - lh) / lh * 100
-        print("Added backmutation to best particle, found new swarm best: %s, increased by %s%%" % (str(round(lh, 2)), str(round(increased,2))))
-        helper.best_particle.current_tree = tree_copy.copy()
-        helper.best_particle.best = helper.best_particle.current_tree
-        helper.best_particle.best.likelihood = lh
+        data.iteration_new_best[i][p.number] = lh
+        helper.best_particle = p
+
+    data.particle_iteration_times[p.number].append(data._passed_seconds(start_time, time.time()))
+    for part in particles:
+        data.particle_iteration_times[part.number].append(0)
 
 
 
 def cb_particle_iteration(r):
-    i, result, p, tree_copy, start_time = r
+    i, p, tree_copy, start_time = r
     # doing this for when we parallelize everything
     particles[p.number] = p
 
@@ -98,15 +124,14 @@ def cb_particle_iteration(r):
 def particle_iteration_all(it, p, helper):
 
     start_time = time.time()
-    result = -1
     tree_copy = p.current_tree.copy()
 
-    # self
-    ops = [0,1,2,3]
+    # self movement
+    ops = [0,1,2,2,3,3]
     for i in range(int(helper.w * random.random() * 6)):
         result = Op.tree_operation(helper, tree_copy, random.choice(ops))
 
-    # particle
+    # movement to particle best
     current_tree_mutations, current_tree_mutation_number = p.current_tree.phylogeny.mutation_number(helper)
     particle_distance = p.current_tree.phylogeny.my_distance(helper, p.best.phylogeny)
     if particle_distance != 0:
@@ -115,7 +140,7 @@ def particle_iteration_all(it, p, helper):
         clade_destination = random.choice(tree_copy.phylogeny.get_clades())
         clade_destination.attach_clade_and_fix(helper, tree_copy, clade_to_be_attached)
 
-    # swarm
+    # movement to swarm best
     current_tree_mutations, current_tree_mutation_number = p.current_tree.phylogeny.mutation_number(helper)
     swarm_distance = p.current_tree.phylogeny.my_distance(helper, helper.best_particle.best.phylogeny)
     if swarm_distance != 0:
@@ -126,21 +151,21 @@ def particle_iteration_all(it, p, helper):
 
     tree_copy.phylogeny.fix_for_losses(helper, tree_copy)
 
-    return it, result, p, tree_copy, start_time
+    return it, p, tree_copy, start_time
+
 
 
 def particle_iteration(it, p, helper):
 
     start_time = time.time()
-    result = -1
     tree_copy = p.current_tree.copy()
 
-    # self
+    # self movement
     ops = [2,3]
     for i in range(int(helper.w * random.random() * 6)):
         result = Op.tree_operation(helper, tree_copy, random.choice(ops))
 
-    # particle
+    # movement to particle best
     current_tree_mutations, current_tree_mutation_number = p.current_tree.phylogeny.mutation_number(helper)
     particle_distance = p.current_tree.phylogeny.my_distance(helper, p.best.phylogeny)
     if particle_distance != 0:
@@ -149,7 +174,7 @@ def particle_iteration(it, p, helper):
         clade_destination = random.choice(tree_copy.phylogeny.get_clades())
         clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
 
-    # swarm
+    # movement to swarm best
     current_tree_mutations, current_tree_mutation_number = p.current_tree.phylogeny.mutation_number(helper)
     swarm_distance = p.current_tree.phylogeny.my_distance(helper, helper.best_particle.best.phylogeny)
     if swarm_distance != 0:
@@ -158,8 +183,7 @@ def particle_iteration(it, p, helper):
         clade_destination = random.choice(tree_copy.phylogeny.get_clades())
         clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
 
-    return it, result, p, tree_copy, start_time
-
+    return it, p, tree_copy, start_time
 
 
 
@@ -191,8 +215,10 @@ def pso(nparticles, iterations, matrix):
 
     data.pso_start = time.time()
 
-    # single_core_run(helper, data, particles, iterations)
-    parallel_run(helper, data, particles, iterations)
+    if helper.parallel:
+        parallel_run(helper, data, particles, iterations)
+    else:
+        single_core_run(helper, data, particles, iterations)
 
     data.pso_end = time.time()
 
@@ -202,21 +228,21 @@ def pso(nparticles, iterations, matrix):
 
 
 
-
 def single_core_run(helper, data, particles, iterations):
-
-    initial_w = helper.w
-    initial_temp = helper.temperature
+    # initial_w = helper.w
+    # initial_temp = helper.temperature
     old_lh = helper.best_particle.best.likelihood
     same_lh = 0
+    same_lh_time = time.time()
+    start_time = data.pso_start
 
-    print("\n2) PSO RUNNING...        ")
+    print("\n2) PSO RUNNING (single-core execution)...        ")
     print("\t\tIteration:\tBest likelihood so far:")
     print("\t\t    /\t\t     %s" % str(round(old_lh, 2)))
 
     automatic_stop = False
     if iterations == 0:
-        iterations = 200
+        iterations = 300
         automatic_stop = True
 
     for it in range(iterations):
@@ -229,6 +255,7 @@ def single_core_run(helper, data, particles, iterations):
         if lh > old_lh:
             print("\t\t    %d\t\t     %s" % (it, str(round(lh, 2))))
             same_lh = 0
+            same_lh_time = time.time()
         else:
             print("\t\t    %d\t\t        \"" % it)
             same_lh += 1
@@ -241,14 +268,42 @@ def single_core_run(helper, data, particles, iterations):
         data.best_iteration_likelihoods.append(lh)
         data.iteration_times.append(data._passed_seconds(start_it, time.time()))
 
-        if automatic_stop and (same_lh == 20 or time.time() - data.pso_start > 120):
+        # it stops if any of the following conditions are met:
+        #   - same best likelihood for 25 iterations
+        #   - same best likelihood for 45 seconds
+        #   - total execution time over 2 minutes
+        now_time = time.time()
+        if automatic_stop and (same_lh == 25 or (now_time - same_lh_time) > 45 or (now_time - start_time) > 118):
             # data.set_iterations(it)
             break
 
 
+    # Adding backmutations
+    print("\n3) ADDING BACKMUTATIONS...")
+    it += 1
+    end = it + data.bm_iterations
+    while it < end:
+        start_it = time.time()
+        cb_backmutations(add_back_mutations(it, helper.best_particle, helper))
+        lh = helper.best_particle.best.likelihood
+        data.best_iteration_likelihoods.append(lh)
+        data.iteration_times.append(data._passed_seconds(start_it, time.time()))
+
+        if lh > old_lh:
+            print("\t\t    %d\t\t     %s" % (it, str(round(lh, 2))))
+            same_lh = 0
+            same_lh_time = time.time()
+        else:
+            print("\t\t    %d\t\t        \"" % it)
+            same_lh += 1
+        old_lh = lh
+
+        it += 1
+    data.set_iterations(it)
+
+
 
 def parallel_run(helper, data, particles, iterations):
-
     # initial_w = helper.w
     # initial_temp = helper.temperature
     old_lh = helper.best_particle.best.likelihood
@@ -258,10 +313,10 @@ def parallel_run(helper, data, particles, iterations):
 
     automatic_stop = False
     if iterations == 0:
-        iterations = 500
+        iterations = 300
         automatic_stop = True
 
-    print("\n2) PSO RUNNING...        ")
+    print("\n2) PSO RUNNING (multi-core execution)...        ")
     print("\t\tIteration:\tBest likelihood so far:")
     print("\t\t    /\t\t     %s" % str(round(old_lh, 2)))
 
@@ -285,7 +340,6 @@ def parallel_run(helper, data, particles, iterations):
         # helper.w -= initial_w/iterations
         # helper.temperature -= (0.5)/iterations
 
-
         pool.close()
         pool.join()
 
@@ -298,12 +352,29 @@ def parallel_run(helper, data, particles, iterations):
         #   - total execution time over 2 minutes
         now_time = time.time()
         if automatic_stop and (same_lh == 25 or (now_time - same_lh_time) > 45 or (now_time - start_time) > 118):
-            data.set_iterations(it)
+            # data.set_iterations(it)
             break
 
     # Adding backmutations
     print("\n3) ADDING BACKMUTATIONS...")
-    i = 0
-    while i < 30:
-        add_back_mutations()
-        i += 1
+    it += 1
+    end = it + data.bm_iterations
+    while it < end:
+        start_it = time.time()
+        cb_backmutations(add_back_mutations(it, helper.best_particle, helper))
+        lh = helper.best_particle.best.likelihood
+        data.best_iteration_likelihoods.append(lh)
+        data.iteration_times.append(data._passed_seconds(start_it, time.time()))
+
+        if lh > old_lh:
+            print("\t\t    %d\t\t     %s" % (it, str(round(lh, 2))))
+            same_lh = 0
+            same_lh_time = time.time()
+        else:
+            print("\t\t    %d\t\t        \"" % it)
+            same_lh += 1
+        old_lh = lh
+
+        it += 1
+
+    data.set_iterations(it)

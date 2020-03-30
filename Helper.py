@@ -1,5 +1,5 @@
 class Helper(object):
-    def __init__(self, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions):
+    def __init__(self, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel):
         self.matrix = matrix
         self.mutation_number = mutation_number
         self.mutation_names = mutation_names
@@ -10,6 +10,7 @@ class Helper(object):
         self.k = k
         self.max_deletions = max_deletions
         self.best_particle = None
+        self.parallel = parallel
 
         # #riscalo w,c1,c2 che la loro somma faccia 1
         somma = sum([w, c1, c2])
@@ -17,7 +18,7 @@ class Helper(object):
         self.c1 = c1/somma
         self.c2 = c2/somma
 
-        self.temperature = 1
+        # self.temperature = 1
         self.avg_dist = 0
 
 
