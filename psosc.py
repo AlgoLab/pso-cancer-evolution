@@ -1,8 +1,38 @@
+
+"""Particle Swarm Optimization for Cancer Evolution
+
+Usage:
+    pso.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--w=<w>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...] [--parallel=<parallel>]
+    pso.py -h | --help
+    pso.py -v | --version
+
+Options:
+    -h --help                               Shows this screen.
+    -v --version                            Shows version.
+    -i infile --infile infile               Matrix input file.
+    -m mutfile --mutfile mutfile            Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
+    -p particles --particles particles      Number of particles to use for PSO. If not used or zero, it will be estimated based on the number of particles and cells [default: 0]
+    -t iterations --iterations iterations   Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after around 3 minutes of total execution) [default: 0].
+    --alpha=<alpha>                         False negative rate [default: 0.15].
+    --beta=<beta>                           False positive rate [default: 0.00001].
+    --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
+    --w=<w>                                 Inertia factor [default: 1].
+    --c1=<c1>                               Learning factor for particle best [default: 1].
+    --c2=<c2>                               Learning factor for swarm best [default: 1].
+    --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
+    --maxdel=<max_deletions>                Maximum number of total deletions allowed [default: 10].
+    --parallel=<parallel>                   Multi-core execution [default: True].
+"""
+
 import multiprocessing as mp
 import random
+import os
 import sys
 import time
-import numpy as np
+from docopt import docopt
+from datetime import datetime
+
+import Setup
 from Helper import Helper
 from Node import Node
 from Operation import Operation as Op
@@ -15,6 +45,34 @@ from Data import Data
 particles = []
 helper = None
 data = None
+
+
+def main(argv):
+    arguments = docopt(__doc__, version = "PSOSC-Cancer-Evolution 2.0")
+    (particles, iterations, matrix, mutation_number, mutation_names, cells,
+        alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel, multiple_runs) = Setup.setup_arguments(arguments)
+
+    base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
+
+    if multiple_runs is None:
+        run_dir = base_dir + "/p%d_i%d" % (particles, iterations)
+        if not os.path.exists(run_dir):
+            os.makedirs(run_dir)
+        data, helper = init(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
+        data.summary(helper, run_dir)
+    else:
+        runs_data = []
+        for r, ptcl in enumerate(multiple_runs):
+            print ("\n=== Run number %d ===" % r)
+            run_dir = base_dir + "/p%d_i%d" % (ptcl, iterations)
+            if not os.path.exists(run_dir):
+                os.makedirs(run_dir)
+            data, helper = init(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
+            data.summary(helper, run_dir)
+            runs_data.append(data)
+        Data.runs_summary(multiple_runs, runs_data, base_dir)
+
+
 
 
 def init(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel):
@@ -53,21 +111,8 @@ def init_particle(i, particle, helper):
 def add_back_mutations(it, p, helper):
     start_time = time.time()
     op = 0
-    tree_copy = p.best.copy()
-    result = Op.tree_operation(helper, tree_copy, op)
-
-    # lh = Tree.greedy_loglikelihood(helper, tree_copy)
-    # best_swarm_lh = helper.best_particle.best.likelihood
-    #
-    # if lh > best_swarm_lh:
-    #     helper.best_particle.current_tree = tree_copy.copy()
-    #     helper.best_particle.best = helper.best_particle.current_tree
-    #     helper.best_particle.best.likelihood = lh
-    #     print("Added backmutation, new swarm best: %s" % str(round(lh, 2)))
-
+    Op.tree_operation(helper, p.best.copy(), op)
     return it, p, tree_copy, start_time
-
-
 
 def cb_backmutations(r):
     i, p, tree_copy, start_time = r
@@ -335,3 +380,8 @@ def parallel_run(helper, data, particles, iterations):
         it += 1
 
     data.set_iterations(it)
+
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

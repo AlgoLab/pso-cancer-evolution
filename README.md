@@ -1,4 +1,4 @@
-# Particle Swarm Optimization for Cancer Evolution 2.0
+# Particle Swarm Optimization Single Cell inference (PSOSC) tool - Cancer progression inference
 
 ## The General Idea
 
@@ -83,5 +83,5 @@ Done!
 ## Example
 
 ```shell
-(env) $ python3 main.py --infile "data/gawad2.txt" --particles 10 --iterations 20 --w 1 --c1 1 --c2 1 --k 3 --maxdel 5 --mutfile "data/gawad2_mut.txt"
+(env) $ python3 psosc.py --infile "data/gawad2.txt" --particles 10 --iterations 20 --w 1 --c1 1 --c2 1 --k 3 --maxdel 5 --mutfile "data/gawad2_mut.txt"
 ```
