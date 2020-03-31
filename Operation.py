@@ -20,22 +20,23 @@ class Operation(object):
         self.node_name_2 = node_name_2
         self.node_name_3 = node_name_3
 
+
     @classmethod
     def tree_operation(cls, helper, tree, operation):
         if operation == cls.BACK_MUTATION:
-            # back-mutation
-            return cls.add_back_mutation(helper, tree)
+            return cls.add_back_mutation(helper, tree) # add a new backmutation
+
         elif operation == cls.DELETE_MUTATION:
-            # delete random mutation
-            return cls.mutation_delete(helper, tree)
+            return cls.mutation_delete(helper, tree) # delete a random mutation
+
         elif operation == cls.SWITCH_NODES:
-            # switch random nodes
-            return cls.switch_nodes(helper, tree)
+            return cls.switch_nodes(helper, tree) # switch two random nodes
+
         elif operation == cls.PRUNE_REGRAFT:
-            # prune-regraft two random nodes
-            return cls.prune_regraft(helper, tree)
+            return cls.prune_regraft(helper, tree) # prune-regraft two random nodes
+
         else:
-            raise SystemError("Something has happened while chosing an operation")
+            raise SystemError("Something has happened while choosing an operation")
 
 
     @classmethod

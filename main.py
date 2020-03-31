@@ -12,7 +12,7 @@ Options:
     -i infile --infile infile               Matrix input file.
     -m mutfile --mutfile mutfile            Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
     -p particles --particles particles      Number of particles to use for PSO. If not used or zero, it will be estimated based on the number of particles and cells [default: 0]
-    -t iterations --iterations iterations   Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after around 2 minutes of total execution) [default: 0].
+    -t iterations --iterations iterations   Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after around 3 minutes of total execution) [default: 0].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
     --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].

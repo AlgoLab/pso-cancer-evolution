@@ -17,9 +17,11 @@ class Data(object):
 
         self.nofparticles = nofparticles
         if iterations == 0:
-            iterations = 200
+            iterations = 500
+            self.bm_iterations = 3 * nofparticles if nofparticles < 14 else 40
+        else:
+            self.bm_iterations = iterations / 3
         self.iterations = iterations
-        self.bm_iterations = 3 * nofparticles
         self.particle_iteration_times = [[] for p in range(nofparticles)]
         self.iteration_times = []
 

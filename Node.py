@@ -5,7 +5,6 @@ from graphviz import Source
 import operator
 import numpy as np
 import matplotlib.pyplot as plt
-
 import json
 
 class Node(Tree):
@@ -99,7 +98,6 @@ class Node(Tree):
 
     def prune_and_reattach(self, node_reattach):
         """ Detaches current node (with all its descendants) and reattaches it into another node """
-
         if node_reattach.is_ancestor_of(self):
             return 1
         if node_reattach.up.uid == self.uid:
@@ -156,7 +154,6 @@ class Node(Tree):
 
     def _get_parent_at_height(self, height=1):
         " Support function that returns the parent node at the desired height "
-
         par = self.up
         climb = 0
         while (par is not None and climb < height):
@@ -241,7 +238,13 @@ class Node(Tree):
         return clades
 
 
-    def my_distance(self, helper, tree):
+    def distance(self, helper, tree):
+        """
+            Calculate distance between this tree and another tree (parameter).
+            It is a relative distance: 1 if they're the same, 0 if they're
+            totally different. It is obtained comparing the genotype profiles
+            of the two trees.
+        """
         nodes1 = self.get_cached_content()
         genotypes1 = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes1))]
         for i, n in enumerate(nodes1):
@@ -265,99 +268,42 @@ class Node(Tree):
             uguali += best_sim_line
 
         totali = max((len(genotypes1) * len(genotypes1[0])), (len(genotypes2) * len(genotypes2[0])))
-        sim = 1 - uguali / totali  #distanza relativa, percentuale
+        sim = 1 - uguali / totali
 
         return sim
 
 
-    def get_clade_by_distance(self, helper, distance, it, type):
+    def get_clade_by_distance(self, helper, distance, it, factor):
+        """
+            Choose a clade, from this tree, that will be attached in another
+            tree. It's chosen either randomly or after calculating the
+            difference between the distance tree-tree and the average distance
+            in the past clade attachments: based on that, it chooses
+            the height of the clade, and randomly, it chooses which clade.
+        """
+        nodes = list(self.get_cached_content().keys())
+        max_h = max([n.get_height() for n in nodes])
 
-        diff = 10 * (distance - helper.avg_dist)
-        if diff > 1:
-            diff = 1
-        elif diff < -1:
-            diff = -1
-        diff = (diff+1)/2
+        if random.random() < 0.5:
+            # calculating and re-scaling difference from [-1,1] to [0,1]
+            diff = 10 * (distance - helper.avg_dist) * factor
+            if diff > 1:
+                diff = 1
+            elif diff < -1:
+                diff = -1
+            diff = (diff+1)/2
+            level = int(diff * (max_h - 2)) + 1
+
+        else:
+            level = random.choice([x for x in range(1, max_h)])
 
         # update average distance
         helper.avg_dist = (helper.avg_dist * it + distance) / (it + 1)
-
-        nodes = list(self.get_cached_content().keys())
-        max_h = max([n.get_height() for n in nodes])
-        most_likely_level = int(diff * (max_h - 2)) + 1
-
-        # print("diff ="+str(diff))
-        # print("level="+str(level))
-
-        possible = [x for x in range(1, max_h)]
-        if type == "particle":
-            factor = helper.c1
-        else:
-            factor = helper.c2
-
-        for i in range(int(random.random() * factor * 10)):
-            possible.append(most_likely_level)
-        level = random.choice(possible)
 
         random.shuffle(nodes)
         for n in nodes:
             if n.get_height() == level:
                 return n
-
-
-    def distance(self, helper, tree):
-        """
-            Calculates the distance between this tree and another.
-            Tree: if compared with the same tree, it has to be a copy of it,
-            not using the same reference, otherwise we will get errors.
-            The formula we use in order to calculate the distance between two trees
-            is as follows:
-
-            d(T1, T2) = max ( sum_{x € T1}(m(x)), sum_{x € T2}(m(x)) ) - max_weight_matching(x)
-            d(T1, T2) € [ 0; (m' * (m' + 1)) / 2 - (m * (m + 1)) / 2 ]
-        """
-        clades_t1 = self.get_clades()
-        clades_t2 = tree.get_clades()
-
-        G = nx.Graph()
-        G.add_nodes_from(clades_t1, bipartite=0)
-        G.add_nodes_from(clades_t2, bipartite=1)
-        edges = []
-        weights = []
-
-        mutations_t1, mut_number_t1 = self.mutation_number(helper)
-        mutations_t2, mut_number_t2 = tree.mutation_number(helper)
-
-        for cl1 in clades_t1:
-            for cl2 in clades_t2:
-                # w(e) = n. common mutations between the two clades
-                w = Node.common_clades_mutation(helper, cl1, cl2)
-                edges.append((cl1, cl2))
-                weights.append(w)
-                G.add_edge(cl1, cl2, weight=w)
-        # max weight matching
-
-        max_matching = nx.algorithms.matching.max_weight_matching(G)
-
-        max_weight = 0
-        max_weight_edge = None
-        matched_weights = []
-
-        for (kk, vv) in max_matching:
-            # searching for that edge position
-            for i, (k, v) in enumerate(edges):
-                if kk == k and vv == v or kk == v and vv == k:
-                    # max_weight += weights[i]
-                    matched_weights.append(weights[i])
-                    break
-            if max_weight == 0 or max_weight < weights[i]:
-                max_weight = weights[i]
-                max_weight_edge = edges[i]
-        distance = max(mut_number_t1, mut_number_t2) - max_weight
-
-        return distance
-        # return distance, max_weight_edge
-        # return distance, mutations_t1, mut_number_t1, mutations_t2, mut_number_t2
 
 
     def back_mutation_ancestry(self):
