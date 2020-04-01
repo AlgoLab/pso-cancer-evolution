@@ -111,7 +111,8 @@ def init_particle(i, particle, helper):
 def add_back_mutations(it, p, helper):
     start_time = time.time()
     op = 0
-    Op.tree_operation(helper, p.best.copy(), op)
+    tree_copy = p.best.copy()
+    Op.tree_operation(helper, tree_copy, op)
     return it, p, tree_copy, start_time
 
 def cb_backmutations(r):
@@ -147,6 +148,7 @@ def cb_particle_iteration(r):
 
     # updating log likelihood and bests
     lh = Tree.greedy_loglikelihood(helper, tree_copy)
+
     tree_copy.likelihood = lh
     p.current_tree = tree_copy
 

@@ -1,9 +1,10 @@
 
 
-a = [1,2,3]
-a += 4 * [4]
-print(a)
-
+a = [[6,8],[3,0]]
+print(a[0][0])
+print(a[0][1])
+print(a[1][0])
+print(a[1][1])
 
 
 # import math

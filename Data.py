@@ -107,7 +107,7 @@ class Data(object):
         self.iteration_new_best = self.iteration_new_best[0:iterations]
 
     def summary(self, helper, dir):
-        Tree.greedy_loglikelihood(helper, helper.best_particle.best, self)
+        Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
         f = open(dir + "/results.txt", "w+")
 
         f.write(">> Number of particles: %d\n" % self.nofparticles)

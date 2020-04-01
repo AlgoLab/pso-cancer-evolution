@@ -138,7 +138,7 @@ class Tree(object):
 
 
     @classmethod
-    def greedy_loglikelihood(cls, helper, tree, data=None):
+    def greedy_loglikelihood_with_data(cls, helper, tree, data=None):
         "Gets maximum likelihood of a tree"
 
         nodes_list = tree.phylogeny.get_cached_content()
@@ -165,6 +165,57 @@ class Tree(object):
                 for j in range(helper.mutation_number):
                     p = Op.prob(helper.matrix[i][j], node_genotypes[n][j], node_genotypes, helper, tree, data)
                     lh += math.log(p)
+
+                if lh > best_lh:
+                    best_sigma = n
+                    best_lh = lh
+
+            tree.best_sigma[i] = best_sigma
+            maximum_likelihood += best_lh
+
+        return maximum_likelihood
+
+
+    @classmethod
+    def greedy_loglikelihood(cls, helper, tree):
+
+        nodes_list = tree.phylogeny.get_cached_content()
+        node_genotypes = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes_list))]
+        for i, n in enumerate(nodes_list):
+            n.get_genotype_profile(node_genotypes[i])
+
+        lh_00 = math.log(1-helper.beta)
+        lh_10 = math.log(helper.beta)
+        lh_01 = math.log(helper.alpha)
+        lh_11 = math.log(1-helper.alpha)
+
+        maximum_likelihood = 0
+
+        for i in range(helper.cells):
+            best_sigma = -1
+            best_lh = float("-inf")
+
+            for n in range(len(nodes_list)):
+                lh = 0
+                for j in range(helper.mutation_number):
+
+                    I = helper.matrix[i][j]
+                    E = node_genotypes[n][j]
+
+                    if I == 0 and E == 0:
+                        p = lh_00
+                    elif I == 0 and E == 1:
+                        p = lh_01
+                    elif I == 1 and E == 0:
+                        p = lh_10
+                    elif I == 1 and E == 1:
+                        p = lh_11
+                    elif I == 2:
+                        p = 0
+                    else:
+                        raise SystemError("Unknown value!")
+
+                    lh += p
 
                 if lh > best_lh:
                     best_sigma = n

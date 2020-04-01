@@ -267,7 +267,7 @@ class Node(Tree):
                     best_sim_line = tmp
             uguali += best_sim_line
 
-        totali = max((len(genotypes1) * len(genotypes1[0])), (len(genotypes2) * len(genotypes2[0])))
+        totali = max(np.size(genotypes1), np.size(genotypes1))
         sim = 1 - uguali / totali
 
         return sim
