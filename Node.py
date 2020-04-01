@@ -6,6 +6,7 @@ import operator
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import copy
 
 class Node(Tree):
 
@@ -246,31 +247,29 @@ class Node(Tree):
             of the two trees.
         """
         nodes1 = self.get_cached_content()
-        genotypes1 = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes1))]
-        for i, n in enumerate(nodes1):
-            n.get_genotype_profile(genotypes1[i])
+        genotypes1 = {}
+        for n in nodes1:
+            if not n.loss:
+                tmp = [0 for j in range(helper.mutation_number)]
+                n.get_genotype_profile(tmp)
+                genotypes1[n.mutation_id] = tmp
 
         nodes2 = tree.get_cached_content()
-        genotypes2 = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes2))]
-        for i, n in enumerate(nodes2):
-            n.get_genotype_profile(genotypes2[i])
+        genotypes2 = {}
+        for n in nodes2:
+            if not n.loss:
+                tmp = [0 for j in range(helper.mutation_number)]
+                n.get_genotype_profile(tmp)
+                genotypes2[n.mutation_id] = tmp
 
-        uguali = 0
-        for i1 in range(len(nodes1)):
-            best_sim_line = 0
-            for i2 in range(len(nodes2)):
-                tmp = 0
-                for j in range(helper.mutation_number):
-                    if genotypes1[i1][j] == genotypes2[i2][j]:
-                        tmp += 1
-                if tmp > best_sim_line:
-                    best_sim_line = tmp
-            uguali += best_sim_line
+        equal = 0
+        for n in nodes1:
+            equal += np.sum(genotypes1[n.mutation_id] == genotypes2[n.mutation_id])
 
-        totali = max(np.size(genotypes1), np.size(genotypes1))
-        sim = 1 - uguali / totali
+        total = len(genotypes1.values())
+        dist = 1 - equal / total
 
-        return sim
+        return dist
 
 
     def get_clade_by_distance(self, helper, distance, it, factor):
