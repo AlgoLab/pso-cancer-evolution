@@ -1,10 +1,37 @@
 
+import time
+import multiprocessing as mp
 
-a = [[6,8],[3,0]]
-print(a[0][0])
-print(a[0][1])
-print(a[1][0])
-print(a[1][1])
+def f(proc, ns, lock):
+    lock.acquire()
+    time.sleep(1)
+    ns.n += 1
+    time.sleep(1)
+    lock.release()
+
+
+
+mgr = mp.Manager()
+ns = mgr.Namespace()
+ns.n = 2
+lock = mgr.Lock()
+
+t1 = time.time()
+
+p1 = mp.Process(target = f, args = (0, ns, lock))
+p2 = mp.Process(target = f, args = (1, ns, lock))
+
+p1.start()
+p2.start()
+
+p1.join()
+p2.join()
+
+t2 = time.time()
+print("time = "+str(t2-t1))
+print("n = "+str(ns.n))
+
+
 
 
 # import math
