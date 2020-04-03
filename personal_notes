@@ -20,5 +20,7 @@ TODO:
 - fare test su w,c1,c2
 - inventarsi modo migliore per backmutations
 - inventarsi modo migliore per calcolo automatico numero particelle e iterazioni backmutations
-- ottimizzare ulteriormente codice
-- non cancellare e ricreare continuamente processi, ma usare gli stessi sempre.
+
+-> migliorare risultati
+-> sistemare criteri di stop. fatto a metà quello delle iterazioni, mica tanto bene però (ogni particle ha iterazioni diverse, la p0 fa meno iterazioni, ovviamente). Oppure lasciare così e sistemare il file di info e il grafico finale
+-> provare a fare al posto del vecchio backmutations, di nuovo iterazioni con particles (clade attachments + operations 0-1)

@@ -1,36 +1,15 @@
-
-import time
-import multiprocessing as mp
-
-def f(proc, ns, lock):
-    lock.acquire()
-    time.sleep(1)
-    ns.n += 1
-    time.sleep(1)
-    lock.release()
+import numpy as np
 
 
+a = [[1,2], [1], [5,1,3]]
+b = np.array(a)
 
-mgr = mp.Manager()
-ns = mgr.Namespace()
-ns.n = 2
-lock = mgr.Lock()
+# sums = [[0],[0],[0]]
+#
+# for i in range(len(a)):
+#     sums[i] = np.mean(a[i])
 
-t1 = time.time()
-
-p1 = mp.Process(target = f, args = (0, ns, lock))
-p2 = mp.Process(target = f, args = (1, ns, lock))
-
-p1.start()
-p2.start()
-
-p1.join()
-p2.join()
-
-t2 = time.time()
-print("time = "+str(t2-t1))
-print("n = "+str(ns.n))
-
+print(b)
 
 
 

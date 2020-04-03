@@ -139,20 +139,6 @@ class Node(Tree):
         node.copy_from(tmp_node)
 
 
-    def get_clade_distance(self, helper, nclades, tree_mn, distance, root=False):
-        clade = None
-        clade_mut_number = None
-        nodes = self.get_clades() if not root else self.get_cached_content()
-
-        for cl in nodes:
-            mutations, mut_number = cl.mutation_number(helper)
-            if mut_number <= distance and mut_number >= tree_mn - distance:
-                if clade is None or mut_number > clade_mut_number:
-                    clade = cl
-                    clade_mut_number = mut_number
-        return clade
-
-
     def _get_parent_at_height(self, height=1):
         " Support function that returns the parent node at the desired height "
         par = self.up
@@ -239,7 +225,7 @@ class Node(Tree):
         return clades
 
 
-    def distance(self, helper, tree):
+    def distance(self, tree, mutation_number):
         """
             Calculate distance between this tree and another tree (parameter).
             It is a relative distance: 1 if they're the same, 0 if they're
@@ -250,7 +236,7 @@ class Node(Tree):
         genotypes1 = {}
         for n in nodes1:
             if not n.loss:
-                tmp = [0 for j in range(helper.mutation_number)]
+                tmp = [0 for j in range(mutation_number)]
                 n.get_genotype_profile(tmp)
                 genotypes1[n.mutation_id] = tmp
 
@@ -258,7 +244,7 @@ class Node(Tree):
         genotypes2 = {}
         for n in nodes2:
             if not n.loss:
-                tmp = [0 for j in range(helper.mutation_number)]
+                tmp = [0 for j in range(mutation_number)]
                 n.get_genotype_profile(tmp)
                 genotypes2[n.mutation_id] = tmp
 

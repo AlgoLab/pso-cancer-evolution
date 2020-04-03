@@ -4,6 +4,7 @@ from matplotlib.ticker import MaxNLocator
 import random
 import sys
 import os
+import numpy as np
 
 class Data(object):
 
@@ -17,10 +18,7 @@ class Data(object):
 
         self.nofparticles = nofparticles
         if iterations == 0:
-            iterations = 500
-            self.bm_iterations = 3 * nofparticles if nofparticles < 14 else 40
-        else:
-            self.bm_iterations = iterations / 3
+            iterations = 1500
         self.iterations = iterations
         self.particle_iteration_times = [[] for p in range(nofparticles)]
         self.iteration_times = []
@@ -59,26 +57,27 @@ class Data(object):
             For each particle, return the average time
             that particle has taken to complete its step
         """
-        sums = [0] * self.nofparticles
-
+        avg = [0] * self.nofparticles
         for i in range(self.nofparticles):
-            for j in range(self.iterations):
-                sums[i] += self.particle_iteration_times[i][j]
+            avg[i] = np.mean(self.particle_iteration_times[i])
 
-        averages = [0] * self.nofparticles
-        for p, s in enumerate(sums):
-            averages[p] = s / self.iterations
-
-        return averages
+        return avg
 
     def average_iteration_particle_time(self):
         average_times = [0] * self.iterations
-        for j in range(self.iterations):
-            for i in range(self.nofparticles):
-                average_times[j] += self.particle_iteration_times[i][j]
+        n = [0] * self.iterations
 
         for j in range(self.iterations):
-            average_times[j] /= self.iterations
+            for i in range(self.nofparticles):
+                if len(self.particle_iteration_times[i]) > j:
+                    average_times[j] += self.particle_iteration_times[i][j]
+                    n[j] += 1
+
+        for j in range(self.iterations):
+            if n[j] == 0:
+                average_times[j] = 0
+            else:
+                average_times[j] /= n[j]
 
         return average_times
 

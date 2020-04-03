@@ -4,7 +4,7 @@ import random as r
 import copy
 import math
 
-# per la creazione random uniforme di alberi
+# for a uniform random trees generation
 lista3 = []
 lista4 = []
 lista5 = []
