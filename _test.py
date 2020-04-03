@@ -1,15 +1,3 @@
-import numpy as np
-
-
-a = [[1,2], [1], [5,1,3]]
-b = np.array(a)
-
-# sums = [[0],[0],[0]]
-#
-# for i in range(len(a)):
-#     sums[i] = np.mean(a[i])
-
-print(b)
 
 
 

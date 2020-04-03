@@ -14,6 +14,9 @@ class Particle(object):
         self.number = number
         self.best = self.current_tree # best tree found by this particle
 
+        self.max_stall_iterations = 100
+        self.tolerance = 0.001
+
 
     def particle_start(self, iterations, helper, ns, lock):
         self.proc = mp.Process(target = self.run_iterations, args = (iterations, helper, ns, lock))
@@ -26,7 +29,8 @@ class Particle(object):
     def run_iterations(self, iterations, helper, ns, lock):
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
-        same_lh = 0
+
+        improvements = [1] * self.max_stall_iterations
 
         for it in range(iterations):
             start_it = time.time()
@@ -35,24 +39,19 @@ class Particle(object):
             if self.number == 0:
 
                 lh = ns.best_swarm.likelihood
+                improvements.pop(0)
+                improvements.append(1-lh/old_lh)
+                old_lh = lh
 
                 if it % 10 == 0:
                     print("\t   %d\t\t     %s" % (it, str(round(lh, 2))))
-
-                # counting iterations without improvements
-                if lh > old_lh:
-                    same_lh = 0
-                    old_lh = lh
-                else:
-                    same_lh += 1
 
                 lock.acquire()
 
                 ns.best_iteration_likelihoods = self.append_to_shared_array(ns.best_iteration_likelihoods, lh)
                 ns.iteration_times = self.append_to_shared_array(ns.iteration_times, time.time() - start_it)
 
-                # stops when: 100 iterations without improvements or 3 minutes of total execution
-                if ns.automatic_stop and same_lh >= 150 or (time.time() - start_time) >= 180:
+                if ns.automatic_stop and (sum(improvements) < self.tolerance or (time.time() - start_time) >= (helper.max_time-2)):
                     ns.stop = True
 
                 lock.release()

@@ -77,11 +77,14 @@ Done!
 - `--c2 [FLOAT]`: Learning factor for swarm best [default: 1].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 10].
+- `--maxtime [INT]`: Maximum time (in seconds) of total PSOSC execution [default: 300].
 - `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
-- `--parallel [BOOLEAN]`: Multi-core execution [default: True].
 
 ## Example
 
 ```shell
 (env) $ python3 psosc.py --infile "data/gawad2.txt" --particles 10 --iterations 20 --w 1 --c1 1 --c2 1 --k 3 --maxdel 5 --mutfile "data/gawad2_mut.txt"
 ```
+
+## Info
+Project based on: https://github.com/IAL32/pso-cancer-evolution

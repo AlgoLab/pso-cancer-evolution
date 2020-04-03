@@ -2,7 +2,7 @@
 """Particle Swarm Optimization Single Cell inference
 
 Usage:
-    prova.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--w=<w>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...] [--parallel=<parallel>]
+    prova.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--w=<w>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...] [--maxtime=<maxtime>]
     prova.py -h | --help
     prova.py -v | --version
 
@@ -21,18 +21,15 @@ Options:
     --c2=<c2>                               Learning factor for swarm best [default: 1].
     --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
     --maxdel=<max_deletions>                Maximum number of total deletions allowed [default: 10].
-    --parallel=<parallel>                   Multi-core execution [default: True].
+    --maxtime=<maxtime>                     Maximum time (in seconds) of total PSOSC execution [default: 300].
 """
 
-import multiprocessing as mp
-import random
 import os
 import sys
 import time
-import copy
-import numpy as np
 from docopt import docopt
 from datetime import datetime
+import multiprocessing as mp
 
 import Setup
 from Helper import Helper
@@ -40,7 +37,6 @@ from Node import Node
 from Operation import Operation as Op
 from Particle import Particle
 from Tree import Tree
-from datetime import datetime
 from Data import Data
 
 # global scope for multiprocessing
@@ -51,39 +47,34 @@ data = None
 def main(argv):
     arguments = docopt(__doc__, version = "PSOSC-Cancer-Evolution 2.0")
     (particles, iterations, matrix, mutation_number, mutation_names, cells,
-        alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel, multiple_runs) = Setup.setup_arguments(arguments)
+        alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time, multiple_runs) = Setup.setup_arguments(arguments)
 
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
 
     if multiple_runs is None:
-        run_dir = base_dir + "/p%d_i%d" % (particles, iterations)
+        run_dir = base_dir + "/particles%d_run%d" % (particles, iterations)
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
-        data, helper = init(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
+        data, helper = init(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time)
         data.summary(helper, run_dir)
     else:
         runs_data = []
         for r, ptcl in enumerate(multiple_runs):
             print ("\n=== Run number %d ===" % r)
-            run_dir = base_dir + "/p%d_i%d" % (ptcl, iterations)
+            run_dir = base_dir + "/particles%d_run%d" % (ptcl, r)
             if not os.path.exists(run_dir):
                 os.makedirs(run_dir)
-            data, helper = init(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
+            data, helper = init(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time)
             data.summary(helper, run_dir)
             runs_data.append(data)
         Data.runs_summary(multiple_runs, runs_data, base_dir)
 
 
 
-def init(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel):
+def init(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time):
     global helper
     global data
-
-    # default number of particles = number of cores of cpu
-    if nparticles == 0:
-        nparticles = mp.cpu_count()
-
-    helper = Helper(matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel)
+    helper = Helper(matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time)
     data = Data(nparticles, iterations)
     pso(nparticles, iterations)
     data.helper = helper
@@ -178,7 +169,7 @@ def pso_adding_backmutations():
 
     iterations_performed = min([len(u) for u in data.particle_iteration_times])
     it = iterations_performed + 1
-    end = int((4 * iterations_performed) / 3)
+    end = int((4 * iterations_performed) / 3) if (iterations_performed < 200) else (iterations_performed + 70)
 
     while it < end:
         start_it = time.time()

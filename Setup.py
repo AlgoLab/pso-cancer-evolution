@@ -3,6 +3,7 @@ import io
 import sys
 import numpy as np
 from Data import Data
+import multiprocessing as mp
 
 def setup_arguments(arguments):
 
@@ -15,11 +16,12 @@ def setup_arguments(arguments):
     c1 = float(arguments['--c1'])
     c2 = float(arguments['--c2'])
     max_deletions = int(arguments['--maxdel'])
+    max_time = int(arguments['--maxtime'])
     if arguments['<runptcl>'] != []:
         multiple_runs = [int(i) for i in arguments['<runptcl>']]
     else:
         multiple_runs = None
-    parallel = arguments['--parallel'].lower() in ['true', 't', 'yes', 'y', '1']
+
 
     #checking for errors
     if particles < 0:
@@ -38,6 +40,8 @@ def setup_arguments(arguments):
         raise Exception("ERROR! w,c1,c2 are all = 0")
     if max_deletions < 0:
         raise Exception("ERROR! maxdel < 0")
+    if max_time < 0:
+        raise Exception("ERROR! maxtime < 0")
 
 
     with open(arguments['--infile'], 'r') as f:
@@ -46,10 +50,14 @@ def setup_arguments(arguments):
     cells = matrix.shape[0]
     matrix = matrix.tolist()
 
+    # default number of particles = number of cores of cpu
+    if particles == 0:
+        particles = mp.cpu_count()
+
     mutation_names = read_mutation_names(arguments['--mutfile'], mutation_number)
     gamma = read_gamma(arguments['--gamma'], mutation_number)
 
-    return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, parallel, multiple_runs
+    return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time, multiple_runs
 
 
 
