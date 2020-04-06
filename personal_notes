@@ -19,6 +19,6 @@ DONE:
 TODO:
 -> fare test su w,c1,c2
 -> migliorare risultati
--> ogni particle ha iterazioni diverse, la p0 fa meno iterazioni, ovviamente. Sistemare il file di info e il grafico finale ????
-   aggiungere nuove info a data???
+-> aggiungere nuove info a data???
 -> provare a fare al posto del vecchio backmutations, di nuovo iterazioni con particles (clade attachments + operations 0-1)
+-> scoprire quando viene creato il .out con la matrice (never, probably)

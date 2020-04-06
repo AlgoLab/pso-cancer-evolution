@@ -137,6 +137,7 @@ class Tree(object):
         return root
 
 
+
     @classmethod
     def greedy_loglikelihood_with_data(cls, helper, tree, data=None):
         "Gets maximum likelihood of a tree"
@@ -153,32 +154,44 @@ class Tree(object):
         #   es. nodi nell'albero:       {c: {c},       b: {b},       d: {c, b},    a: {a},       germline: {c, a, b}}
         #       mutazioni dei nodi:     [[0, 0, 1, 1], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 0, 0]]
 
-
         maximum_likelihood = 0
+        final_values = [0]*5
 
         for i in range(helper.cells):
             best_sigma = -1
             best_lh = float("-inf")
+            best_values = [0]*5
 
             for n in range(len(nodes_list)):
                 lh = 0
+                values = [0]*5
+
                 for j in range(helper.mutation_number):
-                    p = Op.prob(helper.matrix[i][j], node_genotypes[n][j], node_genotypes, helper, tree, data)
+                    p, tmp_values = Op.prob(helper.matrix[i][j], node_genotypes[n][j], node_genotypes, helper, tree, data)
                     lh += math.log(p)
+                    values = [sum(x) for x in zip(values, tmp_values)]
 
                 if lh > best_lh:
                     best_sigma = n
                     best_lh = lh
+                    best_values = values
 
             tree.best_sigma[i] = best_sigma
             maximum_likelihood += best_lh
+            final_values = [sum(x) for x in zip(final_values, best_values)]
+
+        data.false_positives = final_values[0]
+        data.false_negatives = final_values[1]
+        data.true_positives = final_values[2]
+        data.true_negatives = final_values[3]
+        data.missing_values = final_values[4]
 
         return maximum_likelihood
 
 
+
     @classmethod
     def greedy_loglikelihood(cls, helper, tree):
-
         nodes_list = tree.phylogeny.get_cached_content()
         node_genotypes = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes_list))]
         for i, n in enumerate(nodes_list):
@@ -197,6 +210,7 @@ class Tree(object):
 
             for n in range(len(nodes_list)):
                 lh = 0
+
                 for j in range(helper.mutation_number):
 
                     I = helper.matrix[i][j]

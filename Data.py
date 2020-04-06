@@ -23,39 +23,17 @@ class Data(object):
 
         self.best_iteration_likelihoods = []
 
-        self.true_positive = 0
-        self.true_negative = 0
+        self.true_positives = 0
+        self.true_negatives = 0
         self.false_negatives = 0
         self.false_positives = 0
         self.missing_values = 0
 
-
-
-    def pso_passed_seconds(self):
-        return self._passed_seconds(self.pso_start, self.pso_end)
+        self.iterations_performed = []
 
 
 
-    def initialization_passed_seconds(self):
-        return self._passed_seconds(self.initialization_start, self.initialization_end)
-
-
-
-    def iteration_passed_seconds(self, start, end):
-        return self._passed_seconds(start, end)
-
-
-
-    def average_iteration_time(self):
-        """Returns the average time for every iteration """
-        sum = 0
-        for t in self.iteration_times:
-            sum += t
-        return t / self.iterations
-
-
-
-    def average_particle_time(self):
+    def average_iteration_time_per_particle(self):
         """
             For each particle, return the average time
             that particle has taken to complete its step
@@ -63,42 +41,7 @@ class Data(object):
         avg = [0] * self.nofparticles
         for i in range(self.nofparticles):
             avg[i] = np.mean(self.particle_iteration_times[i])
-
         return avg
-
-
-
-    def average_iteration_particle_time(self):
-        average_times = [0] * self.iterations
-        n = [0] * self.iterations
-
-        for j in range(self.iterations):
-            for i in range(self.nofparticles):
-                if len(self.particle_iteration_times[i]) > j:
-                    average_times[j] += self.particle_iteration_times[i][j]
-                    n[j] += 1
-
-        for j in range(self.iterations):
-            if n[j] == 0:
-                average_times[j] = 0
-            else:
-                average_times[j] /= n[j]
-
-        return average_times
-
-
-
-    def average_overall_particle(self):
-        p_times = self.average_particle_time()
-        sum = 0
-        for t in p_times:
-            sum += t
-        return sum / self.nofparticles
-
-
-
-    def _passed_seconds(self, start, end):
-        return end - start
 
 
 
@@ -108,60 +51,44 @@ class Data(object):
 
 
     def summary(self, helper, dir):
-        Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
-        f = open(dir + "/results.txt", "w+")
-        f.write(">> Number of particles: %d\n" % self.nofparticles)
-        f.write(">> Number of iterations: %d\n" % self.iterations)
-        f.write(">> Number of cells: %d\n" % helper.cells)
-        f.write(">> Number of mutations: %d\n" % helper.mutation_number)
-        f.write(">> Starting likelihood: %f\n" % self.starting_likelihood)
-        f.write(">> Best likelihood: %f\n" % helper.best_particle.best.likelihood)
-        f.write(">> Added mutations: %s\n" % ', '.join(map(str, helper.best_particle.best.losses_list)))
-        f.write(">> False negatives: %d\n" % self.false_negatives)
-        f.write(">> False positives: %d\n" % self.false_positives)
-        f.write(">> Added missing values: %d\n" % self.missing_values)
-        f.write(">> PSO completed in %f seconds\n" % self.pso_passed_seconds())
-        f.write(">> Initialization took %f seconds\n" % self.initialization_passed_seconds())
-        f.write(">> Average iteration time: %f seconds\n" % self.average_iteration_time())
-        f.write(">> Average particle time: %f seconds\n" % self.average_overall_particle())
+        # tree image
+        helper.best_particle.best.phylogeny.save(dir + "/best.gv")
 
-        ax = plt.figure().gca()
-
-        # first subplot
-        plt.subplot(3, 1, 1)
-        plt.title("Average Particle Time")
-        plt.xlabel("Particle number")
-        plt.ylabel("Time (in seconds)")
-        avg_particle_time_ = self.average_particle_time()
-        plt.plot(avg_particle_time_)
-        plt.ylim(bottom=0, top=max(avg_particle_time_))
-
-        # second subplot
-        plt.subplot(3, 1, 2)
-        plt.title("Average Particle Time per Iteration")
-        plt.xlabel("Iteration number")
-        plt.ylabel("Time (in seconds)")
-        avg_it_particle_time = self.average_iteration_particle_time()
-        plt.plot([i for i in range(len(avg_it_particle_time))], avg_it_particle_time)
-        plt.ylim(top = max(avg_it_particle_time))
-
-        # third subplot
-        plt.subplot(3, 1, 3)
+        # likelihood plot pdf
         plt.title("Likelihood over Time")
         plt.xlabel("Iteration number")
         plt.ylabel("Log Likelihood")
         plt.plot(self.best_iteration_likelihoods)
-
         plt.tight_layout()
-        plt.savefig(dir + "/data.pdf")
-
-        helper.best_particle.best.phylogeny.save(dir + "/best.gv")
-
-        f.write("Best Tree in Tikz format:\n")
-        f.write(helper.best_particle.best.phylogeny.to_tikz())
-
-        f.close()
+        plt.savefig(dir + "/lh.pdf")
         plt.clf()
+
+        # text file with info
+        Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
+        f = open(dir + "/results.txt", "w+")
+        f.write(">> Number of particles: %d\n" % self.nofparticles)
+        f.write(">> Number of iterations for each particle:\n")
+        for i,its in enumerate(self.iterations_performed):
+            f.write("\t- particle %d: %d\n" % (i, its))
+        f.write("\n>> Number of cells: %d\n" % helper.cells)
+        f.write(">> Number of mutations: %d\n" % helper.mutation_number)
+        f.write("\n>> Starting likelihood: %f\n" % self.starting_likelihood)
+        f.write(">> Final likelihood:    %f\n" % helper.best_particle.best.likelihood)
+        f.write("\n>> Added mutations: %s\n" % ', '.join(map(str, helper.best_particle.best.losses_list)))
+        f.write("\n>> False negatives: %d\n" % self.false_negatives)
+        f.write(">> False positives: %d\n" % self.false_positives)
+        f.write(">> True negatives: %d\n" % self.true_negatives)
+        f.write(">> True positives: %d\n" % self.true_positives)
+        f.write(">> Added missing values: %d\n" % self.missing_values)
+        f.write("\n>> PSO completed in %f seconds\n" % (self.pso_end - self.pso_start))
+        f.write(">> Initialization took %f seconds\n" % (self.initialization_end - self.initialization_start))
+        f.write(">> Average iteration time per particle:\n")
+        for i,t in enumerate(self.average_iteration_time_per_particle()):
+            f.write("\t- particle %d: %s\n" % (i, str(round(t, 4))))
+        f.write("\nBest Tree in Tikz format:\n")
+        f.write(helper.best_particle.best.phylogeny.to_tikz())
+        f.close()
+
 
 
 
@@ -182,7 +109,7 @@ class Data(object):
         f = open(dir + "/results.txt", "w+")
         f.write("Run results table for LaTeX:\n")
         f.write("\\begin{tabular}{*{5}{c}}\n")
-        f.write("\tParticelle & Iterazioni & Likelihood Iniziale & Likelihood Migliore & CPU Time (s) \\\\ \\midrule \\midrule\n")
+        f.write("\tParticles & Iterations & StartingLikelihood & Final Likelihood & CPU Time (s) \\\\ \\midrule \\midrule\n")
         for data in runs_data:
             f.write("\t%s & %s & %s & %s & %s \\\\\n" % (data.nofparticles, data.iterations, data.starting_likelihood, data.helper.best_particle.best.likelihood, data.pso_passed_seconds()))
         f.write("\\end{tabular}")

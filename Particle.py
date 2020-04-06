@@ -6,6 +6,7 @@ import time
 import random
 from Operation import Operation as Op
 from Helper import Helper
+from datetime import datetime
 
 class Particle(object):
 
@@ -18,19 +19,24 @@ class Particle(object):
         self.tolerance = 0.001
 
 
+
     def particle_start(self, iterations, helper, ns, lock):
+        if iterations == 0:
+            iterations = 10000
         self.proc = mp.Process(target = self.run_iterations, args = (iterations, helper, ns, lock))
         self.proc.start()
+
+
 
     def particle_join(self):
         self.proc.join()
 
 
+
     def run_iterations(self, iterations, helper, ns, lock):
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
-
-        improvements = [1] * self.max_stall_iterations
+        improvements = [1] * self.max_stall_iterations #queue
 
         for it in range(iterations):
             start_it = time.time()
@@ -44,7 +50,7 @@ class Particle(object):
                 old_lh = lh
 
                 if it % 10 == 0:
-                    print("\t   %d\t\t     %s" % (it, str(round(lh, 2))))
+                    print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
                 lock.acquire()
 
@@ -131,20 +137,19 @@ class Particle(object):
 
 
 
-    def add_back_mutations(self, it, helper, data):
+    def add_back_mutation(self, it, helper, data):
         start_time = time.time()
         tree_copy = self.current_tree.copy()
 
         old_lh = tree_copy.likelihood
-        op = 0
-        Op.tree_operation(helper, tree_copy, op)
+        Op.tree_operation(helper, tree_copy, 0)
         tree_copy.likelihood = Tree.greedy_loglikelihood(helper, tree_copy)
         new_lh = tree_copy.likelihood
 
         if new_lh > old_lh:
             self.current_tree = tree_copy.copy()
             self.best = self.current_tree
-            
-        data.particle_iteration_times[self.number].append(data._passed_seconds(start_time, time.time()))
+
+        data.particle_iteration_times[self.number].append(time.time() - start_time)
 
         return data

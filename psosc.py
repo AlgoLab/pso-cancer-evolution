@@ -1,5 +1,6 @@
 
-"""Particle Swarm Optimization Single Cell inference
+"""
+Particle Swarm Optimization Single Cell inference
 
 Usage:
     prova.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--w=<w>] [--c1=<c1>] [--c2=<c2>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--multiple <runptcl>...] [--maxtime=<maxtime>]
@@ -87,17 +88,17 @@ def pso(nparticles, iterations):
     global helper
     global data
 
-    print("\n • PARTICLES START-UP  ")
+    print("\n • PARTICLES START-UP")
     particles = pso_start_up(nparticles)
 
     print("\n • PSO RUNNING...")
-    print("\tIteration\tBest likelihood so far")
+    print("\t  Time\t\t Best likelihood so far")
     pso_parallel_execution(particles, iterations)
 
     print("\n • ADDING BACKMUTATIONS...")
-    pso_adding_backmutations()
+    pso_add_backmutations()
 
-    print("\n • FINAL RESULTS:        ")
+    print("\n • FINAL RESULTS")
     print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_passed_seconds(), 2))))
     print("\t- best likelihood: %s\n" % str(round(helper.best_particle.best.likelihood, 2)))
 
@@ -106,7 +107,6 @@ def pso(nparticles, iterations):
 def pso_start_up(nparticles):
     global helper
     global data
-
     data.initialization_start = time.time()
 
     # Random position, each tree is a binary tree at the beginning
@@ -127,7 +127,6 @@ def pso_start_up(nparticles):
 def pso_parallel_execution(particles, iterations):
     global helper
     global data
-
     data.pso_start = time.time()
 
     # creating shared memory between processes
@@ -140,10 +139,7 @@ def pso_parallel_execution(particles, iterations):
     ns.iteration_times = data.iteration_times
     ns.particle_iteration_times = data.particle_iteration_times
     ns.stop = False
-    ns.automatic_stop = False
-    if iterations == 0:
-        iterations = 10000
-        ns.automatic_stop = True
+    ns.automatic_stop = iterations == 0
 
     # creating lock
     lock = manager.Lock()
@@ -162,32 +158,31 @@ def pso_parallel_execution(particles, iterations):
 
 
 
-def pso_adding_backmutations():
+def pso_add_backmutations():
     global helper
     global data
 
     helper.best_particle.current_tree = helper.best_particle.best
 
-    iterations_performed = min([len(u) for u in data.particle_iteration_times])
-    it = iterations_performed + 1
+    iterations_performed = min([len(t) for t in data.particle_iteration_times])
     end = (iterations_performed + int(iterations_performed / 3)) if (iterations_performed < 300) else (iterations_performed + 100)
 
-    while it < end:
+    for it in range(iterations_performed + 1, end):
         start_it = time.time()
 
-        data = helper.best_particle.add_back_mutations(it, helper, data)
+        data = helper.best_particle.add_back_mutation(it, helper, data)
 
         lh = helper.best_particle.best.likelihood
         data.best_iteration_likelihoods.append(lh)
-        data.iteration_times.append(data._passed_seconds(start_it, time.time()))
+        data.iteration_times.append(time.time() - start_it)
 
         if it % 10 == 0:
-            print("\t   %d\t\t     %s" % (it, str(round(lh, 2))))
-        it += 1
+            print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
     data.set_iterations(end)
 
-    # print("number of iterations per particle: " + str([len(u) for u in data.particle_iteration_times]))
+    # save how many iterations each particle did
+    data.iterations_performed = [len(t) for t in data.particle_iteration_times]
 
     data.pso_end = time.time()
 
