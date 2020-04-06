@@ -48,7 +48,7 @@ Then activate the virtual environment:
 $ source ./env/bin/activate
 ```
 
-Lastly, install every necessary package:
+Finally, install every necessary package:
 ```shell
 (env) $ pip install numpy
 (env) $ pip install graphviz
@@ -77,7 +77,7 @@ Done!
 - `--c2 [FLOAT]`: Learning factor for swarm best [default: 1].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 10].
-- `--maxtime [INT]`: Maximum time (in seconds) of total PSOSC execution [default: 300].
+- `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 300].
 - `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
 
 ## Example

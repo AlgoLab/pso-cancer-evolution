@@ -44,6 +44,7 @@ helper = None
 data = None
 
 
+
 def main(argv):
     arguments = docopt(__doc__, version = "PSOSC-Cancer-Evolution 2.0")
     (particles, iterations, matrix, mutation_number, mutation_names, cells,
@@ -60,7 +61,7 @@ def main(argv):
     else:
         runs_data = []
         for r, ptcl in enumerate(multiple_runs):
-            print ("\n=== Run number %d ===" % r)
+            print ("\n===== Run number %d =====" % r)
             run_dir = base_dir + "/particles%d_run%d" % (ptcl, r)
             if not os.path.exists(run_dir):
                 os.makedirs(run_dir)
@@ -81,6 +82,7 @@ def init(nparticles, iterations, matrix, mutation_number, mutation_names, cells,
     return data, helper
 
 
+
 def pso(nparticles, iterations):
     global helper
     global data
@@ -98,6 +100,7 @@ def pso(nparticles, iterations):
     print("\n • FINAL RESULTS:        ")
     print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_passed_seconds(), 2))))
     print("\t- best likelihood: %s\n" % str(round(helper.best_particle.best.likelihood, 2)))
+
 
 
 def pso_start_up(nparticles):
@@ -135,13 +138,11 @@ def pso_parallel_execution(particles, iterations):
     ns.best_swarm = helper.best_particle.best.copy()
     ns.best_iteration_likelihoods = data.best_iteration_likelihoods
     ns.iteration_times = data.iteration_times
-    ns.iteration_new_particle_best = data.iteration_new_particle_best
-    ns.iteration_new_best = data.iteration_new_best
     ns.particle_iteration_times = data.particle_iteration_times
     ns.stop = False
     ns.automatic_stop = False
     if iterations == 0:
-        iterations = 1500
+        iterations = 10000
         ns.automatic_stop = True
 
     # creating lock
@@ -156,8 +157,6 @@ def pso_parallel_execution(particles, iterations):
     # copying back data from shared memory
     data.best_iteration_likelihoods = ns.best_iteration_likelihoods
     data.iteration_times = ns.iteration_times
-    data.iteration_new_particle_best = ns.iteration_new_particle_best
-    data.iteration_new_best = ns.iteration_new_best
     data.particle_iteration_times = ns.particle_iteration_times
     helper.best_particle.best = ns.best_swarm.copy()
 
@@ -167,14 +166,16 @@ def pso_adding_backmutations():
     global helper
     global data
 
+    helper.best_particle.current_tree = helper.best_particle.best
+
     iterations_performed = min([len(u) for u in data.particle_iteration_times])
     it = iterations_performed + 1
-    end = int((4 * iterations_performed) / 3) if (iterations_performed < 200) else (iterations_performed + 70)
+    end = (iterations_performed + int(iterations_performed / 3)) if (iterations_performed < 300) else (iterations_performed + 100)
 
     while it < end:
         start_it = time.time()
 
-        cb_backmutations(add_back_mutations(it, helper.best_particle, helper))
+        data = helper.best_particle.add_back_mutations(it, helper, data)
 
         lh = helper.best_particle.best.likelihood
         data.best_iteration_likelihoods.append(lh)
@@ -185,44 +186,10 @@ def pso_adding_backmutations():
         it += 1
 
     data.set_iterations(end)
+
     # print("number of iterations per particle: " + str([len(u) for u in data.particle_iteration_times]))
 
     data.pso_end = time.time()
-
-
-
-def add_back_mutations(it, p, helper):
-    start_time = time.time()
-    op = 0
-    tree_copy = p.best.copy()
-    Op.tree_operation(helper, tree_copy, op)
-    return it, p, tree_copy, start_time
-
-
-
-def cb_backmutations(r):
-    i, p, tree_copy, start_time = r
-
-    # updating log likelihood and bests
-    lh = Tree.greedy_loglikelihood(helper, tree_copy)
-    tree_copy.likelihood = lh
-    p.current_tree = tree_copy
-
-    best_particle_lh = p.best.likelihood
-    best_swarm_lh = helper.best_particle.best.likelihood
-
-    if lh > best_particle_lh:
-        data.iteration_new_particle_best[i][p.number] = lh
-        p.best = tree_copy
-
-    if lh > best_swarm_lh:
-        data.iteration_new_best[i][p.number] = lh
-        helper.best_particle = p
-
-    # for part in particles:
-    #     if part.number != p.number:
-    #         data.particle_iteration_times[part.number].append(0)
-    data.particle_iteration_times[p.number].append(data._passed_seconds(start_time, time.time()))
 
 
 

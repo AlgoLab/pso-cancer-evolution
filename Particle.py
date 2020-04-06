@@ -65,14 +65,9 @@ class Particle(object):
         arr.append(v)
         return arr
 
-    def update_shared_matrix(self, matrix, i, j, new_value):
-        matrix[i][j] = new_value
-        return matrix
-
 
 
     def cb_particle_iteration(self, r, ns, lock):
-
         helper, i, tree_copy, start_time = r
 
         # updating log likelihood and bests
@@ -81,19 +76,16 @@ class Particle(object):
         tree_copy.likelihood = lh
         self.current_tree = tree_copy
 
-        # ---- critical section
-        lock.acquire()
-
         # update particle best
         best_particle_lh = self.best.likelihood
         if lh > best_particle_lh:
-            ns.iteration_new_particle_best = self.update_shared_matrix(ns.iteration_new_particle_best, i, self.number, lh)
             self.best = tree_copy
+
+        lock.acquire()
 
         # update swarm best
         best_swarm_lh = ns.best_swarm.likelihood
         if lh > best_swarm_lh:
-            ns.iteration_new_best = self.update_shared_matrix(ns.iteration_new_best, i, self.number, lh)
             ns.best_swarm = tree_copy
 
         # update particle iteration times
@@ -101,19 +93,16 @@ class Particle(object):
         tmp[self.number].append(time.time() - start_time)
         ns.particle_iteration_times = tmp
 
-        # ---- end of critical section
         lock.release()
 
 
 
     def particle_iteration(self, it, helper, best_swarm):
-
         start_time = time.time()
         tree_copy = self.current_tree.copy()
-        mutation_number = helper.mutation_number
 
         # movement to particle best
-        particle_distance = tree_copy.phylogeny.distance(self.best.phylogeny, mutation_number)
+        particle_distance = tree_copy.phylogeny.distance(self.best.phylogeny, helper.mutation_number)
         if particle_distance != 0:
             clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper, particle_distance, it, helper.c1)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
@@ -121,7 +110,7 @@ class Particle(object):
             clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
 
         # movement to swarm best
-        swarm_distance = tree_copy.phylogeny.distance(best_swarm.phylogeny, mutation_number)
+        swarm_distance = tree_copy.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
         if swarm_distance != 0:
             clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper, swarm_distance, it, helper.c2)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
@@ -139,3 +128,23 @@ class Particle(object):
             Op.tree_operation(helper, tree_copy, random.choice(ops))
 
         return helper, it, tree_copy, start_time
+
+
+
+    def add_back_mutations(self, it, helper, data):
+        start_time = time.time()
+        tree_copy = self.current_tree.copy()
+
+        old_lh = tree_copy.likelihood
+        op = 0
+        Op.tree_operation(helper, tree_copy, op)
+        tree_copy.likelihood = Tree.greedy_loglikelihood(helper, tree_copy)
+        new_lh = tree_copy.likelihood
+
+        if new_lh > old_lh:
+            self.current_tree = tree_copy.copy()
+            self.best = self.current_tree
+            
+        data.particle_iteration_times[self.number].append(data._passed_seconds(start_time, time.time()))
+
+        return data

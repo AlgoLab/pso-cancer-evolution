@@ -17,15 +17,11 @@ class Data(object):
         self.starting_likelihood = 0
 
         self.nofparticles = nofparticles
-        if iterations == 0:
-            iterations = 1500
         self.iterations = iterations
         self.particle_iteration_times = [[] for p in range(nofparticles)]
         self.iteration_times = []
 
         self.best_iteration_likelihoods = []
-        self.iteration_new_particle_best = [[0 for p in range(nofparticles)] for n in range(iterations+30)]
-        self.iteration_new_best = [[0 for p in range(nofparticles)] for n in range(iterations+30)]
 
         self.true_positive = 0
         self.true_negative = 0
@@ -34,23 +30,30 @@ class Data(object):
         self.missing_values = 0
 
 
+
     def pso_passed_seconds(self):
         return self._passed_seconds(self.pso_start, self.pso_end)
+
+
 
     def initialization_passed_seconds(self):
         return self._passed_seconds(self.initialization_start, self.initialization_end)
 
+
+
     def iteration_passed_seconds(self, start, end):
         return self._passed_seconds(start, end)
 
+
+
     def average_iteration_time(self):
-        """
-            Returns the average time for every iteration
-        """
+        """Returns the average time for every iteration """
         sum = 0
         for t in self.iteration_times:
             sum += t
         return t / self.iterations
+
+
 
     def average_particle_time(self):
         """
@@ -62,6 +65,8 @@ class Data(object):
             avg[i] = np.mean(self.particle_iteration_times[i])
 
         return avg
+
+
 
     def average_iteration_particle_time(self):
         average_times = [0] * self.iterations
@@ -81,34 +86,30 @@ class Data(object):
 
         return average_times
 
+
+
     def average_overall_particle(self):
         p_times = self.average_particle_time()
-
         sum = 0
         for t in p_times:
             sum += t
-
         return sum / self.nofparticles
 
-    def likelihood_over_time(self):
-        likelihoods = []
-        for it in self.iteration_new_best:
-            for lh in it:
-                likelihoods.append(lh)
-        return likelihoods
+
 
     def _passed_seconds(self, start, end):
         return end - start
 
+
+
     def set_iterations(self, iterations):
         self.iterations = iterations
-        self.iteration_new_particle_best = self.iteration_new_particle_best[0:iterations]
-        self.iteration_new_best = self.iteration_new_best[0:iterations]
+
+
 
     def summary(self, helper, dir):
         Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
         f = open(dir + "/results.txt", "w+")
-
         f.write(">> Number of particles: %d\n" % self.nofparticles)
         f.write(">> Number of iterations: %d\n" % self.iterations)
         f.write(">> Number of cells: %d\n" % helper.cells)
@@ -119,29 +120,10 @@ class Data(object):
         f.write(">> False negatives: %d\n" % self.false_negatives)
         f.write(">> False positives: %d\n" % self.false_positives)
         f.write(">> Added missing values: %d\n" % self.missing_values)
-        f.write(">> PSO completed in %f seconds\n" % (self.pso_passed_seconds()))
+        f.write(">> PSO completed in %f seconds\n" % self.pso_passed_seconds())
         f.write(">> Initialization took %f seconds\n" % self.initialization_passed_seconds())
         f.write(">> Average iteration time: %f seconds\n" % self.average_iteration_time())
         f.write(">> Average particle time: %f seconds\n" % self.average_overall_particle())
-
-        f.write('>> Iteration times: \n')
-        for i in self.iteration_times:
-            f.write(str(i) + ',')
-        f.write('\n')
-        f.write('>> Best iteration likelihoods: \n')
-        for i in self.best_iteration_likelihoods:
-            f.write(str(i) + ',')
-        f.write('\n')
-        f.write('>> Iteration New Particle Best: \n')
-        for n in self.iteration_new_particle_best:
-            for p in n:
-                f.write(str(p) + ',')
-            f.write('\n')
-        f.write('>> Iteration new best: \n')
-        for n in self.iteration_new_best:
-            for p in n:
-                f.write(str(p) + ',')
-            f.write('\n')
 
         ax = plt.figure().gca()
 
@@ -180,6 +162,8 @@ class Data(object):
 
         f.close()
         plt.clf()
+
+
 
     @classmethod
     def runs_summary(cls, runs, runs_data, dir):
