@@ -1,7 +1,6 @@
 from Tree import Tree
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-import random
 import sys
 import os
 import numpy as np
@@ -19,7 +18,6 @@ class Data(object):
         self.nofparticles = nofparticles
         self.iterations = iterations
         self.particle_iteration_times = [[] for p in range(nofparticles)]
-        self.iteration_times = []
 
         self.best_iteration_likelihoods = []
 
@@ -28,6 +26,13 @@ class Data(object):
         self.false_negatives = 0
         self.false_positives = 0
         self.missing_values = 0
+
+        self.true_positives_relative = 0
+        self.true_negatives_relative = 0
+        self.false_negatives_relative = 0
+        self.false_positives_relative = 0
+        self.missing_values_relative = 0
+        self.accuracy = 0
 
         self.iterations_performed = []
 
@@ -50,7 +55,20 @@ class Data(object):
 
 
 
+    def calculate_accuracy(self, helper):
+        Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
+        tot = self.true_positives + self.true_negatives + self.false_negatives + self.false_positives + self.missing_values
+        self.true_positives_relative = (100 * self.true_positives) / tot
+        self.true_negatives_relative = (100 * self.true_negatives) / tot
+        self.false_positives_relative = (100 * self.false_positives) / tot
+        self.false_negatives_relative = (100 * self.false_negatives) / tot
+        self.missing_values_relative = (100 * self.missing_values) / tot
+        self.accuracy = 100 - (self.false_positives_relative + self.false_negatives_relative)
+
+
+
     def summary(self, helper, dir):
+
         # tree image
         helper.best_particle.best.phylogeny.save(dir + "/best.gv")
 
@@ -64,7 +82,6 @@ class Data(object):
         plt.clf()
 
         # text file with info
-        Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
         f = open(dir + "/results.txt", "w+")
         f.write(">> Number of particles: %d\n" % self.nofparticles)
         f.write(">> Number of iterations for each particle:\n")
@@ -75,11 +92,12 @@ class Data(object):
         f.write("\n>> Starting likelihood: %f\n" % self.starting_likelihood)
         f.write(">> Final likelihood:    %f\n" % helper.best_particle.best.likelihood)
         f.write("\n>> Added mutations: %s\n" % ', '.join(map(str, helper.best_particle.best.losses_list)))
-        f.write("\n>> False negatives: %d\n" % self.false_negatives)
-        f.write(">> False positives: %d\n" % self.false_positives)
-        f.write(">> True negatives: %d\n" % self.true_negatives)
-        f.write(">> True positives: %d\n" % self.true_positives)
-        f.write(">> Added missing values: %d\n" % self.missing_values)
+        f.write("\n>> False negatives:      %d\t(%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 1))))
+        f.write(">> False positives:      %d\t(%s%%)\n" % (self.false_positives, str(round(self.false_positives_relative, 1))))
+        f.write(">> True negatives:       %d\t(%s%%)\n" % (self.true_negatives, str(round(self.true_negatives_relative, 1))))
+        f.write(">> True positives:       %d\t(%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 1))))
+        f.write(">> Added missing values: %d\t(%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 1))))
+        f.write(">> Accuracy: %s%%\n" % str(round(self.accuracy, 1)))
         f.write("\n>> PSO completed in %f seconds\n" % (self.pso_end - self.pso_start))
         f.write(">> Initialization took %f seconds\n" % (self.initialization_end - self.initialization_start))
         f.write(">> Average iteration time per particle:\n")

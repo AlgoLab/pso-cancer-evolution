@@ -15,8 +15,8 @@ class Particle(object):
         self.number = number
         self.best = self.current_tree # best tree found by this particle
 
-        self.max_stall_iterations = 100
-        self.tolerance = 0.001
+        self.max_stall_iterations = 200
+        self.tolerance = 0.002
 
 
 
@@ -39,8 +39,7 @@ class Particle(object):
         improvements = [1] * self.max_stall_iterations #queue
 
         for it in range(iterations):
-            start_it = time.time()
-            self.cb_particle_iteration(self.particle_iteration(it, helper, ns.best_swarm.copy()), ns, lock)
+            self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
 
             if self.number == 0:
 
@@ -55,7 +54,6 @@ class Particle(object):
                 lock.acquire()
 
                 ns.best_iteration_likelihoods = self.append_to_shared_array(ns.best_iteration_likelihoods, lh)
-                ns.iteration_times = self.append_to_shared_array(ns.iteration_times, time.time() - start_it)
 
                 if ns.automatic_stop and (sum(improvements) < self.tolerance or (time.time() - start_time) >= (helper.max_time-2)):
                     ns.stop = True
@@ -73,38 +71,8 @@ class Particle(object):
 
 
 
-    def cb_particle_iteration(self, r, ns, lock):
-        helper, i, tree_copy, start_time = r
-
-        # updating log likelihood and bests
-        lh = Tree.greedy_loglikelihood(helper, tree_copy)
-
-        tree_copy.likelihood = lh
-        self.current_tree = tree_copy
-
-        # update particle best
-        best_particle_lh = self.best.likelihood
-        if lh > best_particle_lh:
-            self.best = tree_copy
-
-        lock.acquire()
-
-        # update swarm best
-        best_swarm_lh = ns.best_swarm.likelihood
-        if lh > best_swarm_lh:
-            ns.best_swarm = tree_copy
-
-        # update particle iteration times
-        tmp = ns.particle_iteration_times
-        tmp[self.number].append(time.time() - start_time)
-        ns.particle_iteration_times = tmp
-
-        lock.release()
-
-
-
-    def particle_iteration(self, it, helper, best_swarm):
-        start_time = time.time()
+    def particle_iteration(self, it, helper, best_swarm, ns, lock):
+        start_it = time.time()
         tree_copy = self.current_tree.copy()
 
         # movement to particle best
@@ -133,12 +101,34 @@ class Particle(object):
         for i in range(n_op):
             Op.tree_operation(helper, tree_copy, random.choice(ops))
 
-        return helper, it, tree_copy, start_time
+        # updating log likelihood and bests
+        lh = Tree.greedy_loglikelihood(helper, tree_copy)
+        tree_copy.likelihood = lh
+        self.current_tree = tree_copy
+
+        # update particle best
+        best_particle_lh = self.best.likelihood
+        if lh > best_particle_lh:
+            self.best = tree_copy
+
+        lock.acquire()
+
+        # update swarm best
+        best_swarm_lh = ns.best_swarm.likelihood
+        if lh > best_swarm_lh:
+            ns.best_swarm = tree_copy
+
+        # update particle iteration times
+        tmp = ns.particle_iteration_times
+        tmp[self.number].append(time.time() - start_it)
+        ns.particle_iteration_times = tmp
+
+        lock.release()
 
 
 
-    def add_back_mutation(self, it, helper, data):
-        start_time = time.time()
+    def add_back_mutation(self, helper, data):
+        start_it = time.time()
         tree_copy = self.current_tree.copy()
 
         old_lh = tree_copy.likelihood
@@ -150,6 +140,6 @@ class Particle(object):
             self.current_tree = tree_copy.copy()
             self.best = self.current_tree
 
-        data.particle_iteration_times[self.number].append(time.time() - start_time)
+        data.particle_iteration_times[self.number].append(time.time() - start_it)
 
         return data

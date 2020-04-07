@@ -98,9 +98,12 @@ def pso(nparticles, iterations):
     print("\n • ADDING BACKMUTATIONS...")
     pso_add_backmutations()
 
+    data.calculate_accuracy(helper)
+
     print("\n • FINAL RESULTS")
-    print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_passed_seconds(), 2))))
-    print("\t- best likelihood: %s\n" % str(round(helper.best_particle.best.likelihood, 2)))
+    print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_end - data.pso_start, 2))))
+    print("\t- best likelihood: %s" % str(round(helper.best_particle.best.likelihood, 2)))
+    print("\t- accuracy: %s%%\n" % str(round(data.accuracy, 1)))
 
 
 
@@ -136,7 +139,6 @@ def pso_parallel_execution(particles, iterations):
     # coping data into shared memory
     ns.best_swarm = helper.best_particle.best.copy()
     ns.best_iteration_likelihoods = data.best_iteration_likelihoods
-    ns.iteration_times = data.iteration_times
     ns.particle_iteration_times = data.particle_iteration_times
     ns.stop = False
     ns.automatic_stop = iterations == 0
@@ -152,7 +154,6 @@ def pso_parallel_execution(particles, iterations):
 
     # copying back data from shared memory
     data.best_iteration_likelihoods = ns.best_iteration_likelihoods
-    data.iteration_times = ns.iteration_times
     data.particle_iteration_times = ns.particle_iteration_times
     helper.best_particle.best = ns.best_swarm.copy()
 
@@ -170,11 +171,10 @@ def pso_add_backmutations():
     for it in range(iterations_performed + 1, end):
         start_it = time.time()
 
-        data = helper.best_particle.add_back_mutation(it, helper, data)
+        data = helper.best_particle.add_back_mutation(helper, data)
 
         lh = helper.best_particle.best.likelihood
         data.best_iteration_likelihoods.append(lh)
-        data.iteration_times.append(time.time() - start_it)
 
         if it % 10 == 0:
             print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
