@@ -11,9 +11,6 @@ def setup_arguments(arguments):
     alpha = float(arguments['--alpha'])
     beta = float(arguments['--beta'])
     k = int(arguments['--k'])
-    w = float(arguments['--w'])
-    c1 = float(arguments['--c1'])
-    c2 = float(arguments['--c2'])
     max_deletions = int(arguments['--maxdel'])
     max_time = int(arguments['--maxtime'])
     if arguments['<runptcl>'] != []:
@@ -29,14 +26,6 @@ def setup_arguments(arguments):
         raise Exception("ERROR! Iterations < 0")
     if k < 0:
         raise Exception("ERROR! k < 0")
-    if w < 0:
-        raise Exception("ERROR! w < 0")
-    if c1 < 0:
-        raise Exception("ERROR! c1 < 0")
-    if c2 < 0:
-        raise Exception("ERROR! c2 < 0")
-    if w == 0 and c1 == 0 and c2 == 0:
-        raise Exception("ERROR! w,c1,c2 are all = 0")
     if max_deletions < 0:
         raise Exception("ERROR! maxdel < 0")
     if max_time < 30:
@@ -56,7 +45,7 @@ def setup_arguments(arguments):
     mutation_names = read_mutation_names(arguments['--mutfile'], mutation_number)
     gamma = read_gamma(arguments['--gamma'], mutation_number)
 
-    return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time, multiple_runs
+    return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time, multiple_runs
 
 
 

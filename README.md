@@ -72,9 +72,6 @@ Done!
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
 - `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
-- `--w [FLOAT]`: Inertia factor [default: 1].
-- `--c1 [FLOAT]`: Learning factor for particle best [default: 1].
-- `--c2 [FLOAT]`: Learning factor for swarm best [default: 1].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 10].
 - `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 300].

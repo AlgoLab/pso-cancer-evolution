@@ -55,10 +55,20 @@ class Particle(object):
                 if it % 10 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
-                if not(bm) and sum(improvements) < self.tolerance:
-                    improvements = deque([1] * self.max_stall_iterations)
-                    bm = True
-                    ops = [0,1]
+                if not(bm):
+                    # if 3/4 of max time
+                    b1 = (time.time() - start_time) >= (3/4)*(helper.max_time)
+
+                    # if iterations given in input and 3/4 of iterations
+                    b2 = not(ns.automatic_stop) and it >= (3/4)*iterations
+
+                    # if iterations not given
+                    b3 = ns.automatic_stop and sum(improvements) < self.tolerance
+
+                    if b1 or b2 or b3:
+                        improvements = deque([1] * self.max_stall_iterations)
+                        bm = True
+                        ops = [0,1]
 
                 lock.acquire()
 
@@ -87,7 +97,7 @@ class Particle(object):
         # movement to particle best
         particle_distance = tree_copy.phylogeny.distance(self.best.phylogeny, helper.mutation_number)
         if particle_distance != 0:
-            clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper, particle_distance, it, helper.c1)
+            clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper, particle_distance, it)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
             clade_destination = random.choice(tree_copy.phylogeny.get_clades())
             clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
@@ -96,7 +106,7 @@ class Particle(object):
         # movement to swarm best
         swarm_distance = tree_copy.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
         if swarm_distance != 0:
-            clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper, swarm_distance, it, helper.c2)
+            clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper, swarm_distance, it)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
             clade_destination = random.choice(tree_copy.phylogeny.get_clades())
             clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)

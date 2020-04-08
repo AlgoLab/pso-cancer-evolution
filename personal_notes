@@ -19,8 +19,6 @@ DONE:
 
 TODO:
 -> migliorare risultati
--> aggiungere nuove info a data???
--> capire se effettivamente w,c1,c2 servono e farci dei test
-
--> sistemare il n° di iterazionibm quando iterations!=0
--> non ci sono più nel file info le iterations per particles
+-> velocizzare esecuzione
+-> aggiungere nuove info a data
+-> migliorare i fix

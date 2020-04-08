@@ -32,55 +32,6 @@ class Node(Tree):
 
 
 
-    def fix_for_losses(self, helper, tree, delete_only=False):
-        # saving current children list, it will change if we delete
-        # the current node
-        if helper.k == 0:
-            return
-        children = [c for c in self.children]
-        for n in children:
-            n.fix_for_losses(helper, tree)
-
-        if self.loss and self in tree.losses_list:
-            valid = self.is_loss_valid()
-            lost = self.is_mutation_already_lost(self.mutation_id, k=helper.k)
-
-            if (not valid) or lost:
-                if not delete_only:
-                    self.delete_b(helper, tree)
-                else:
-                    self.delete(prevent_nondicotomic=False)
-
-
-
-    def losses_fix(self, helper, tree):
-        tree.phylogeny.update_losses_list(helper, tree)
-        families = []
-        nodes = self.get_cached_content()
-        for n in nodes:
-            if n.loss:
-
-                # elimina loss se ce ne sono troppe di un tipo
-                if tree.k_losses_list[n.mutation_id] >= helper.k:
-                    n.delete_b(helper, tree)
-
-                # elimina loss se non valida
-                else:
-                    genotypes = [0]*helper.mutation_number
-                    n.get_genotype_profile(genotypes)
-                    if min(genotypes) < 0:
-                        n.delete_b(helper, tree)
-
-                    # elimina loss se duplicata
-                    else:
-                        family = [n.mutation_id, n.up]
-                        if (family in families and n.children == []):
-                            n.delete_b(helper, tree)
-                        else:
-                            families.append(family)
-
-
-
     def delete_b(self, helper, tree):
         if self in tree.losses_list:
             tree.losses_list.remove(self)
@@ -287,7 +238,7 @@ class Node(Tree):
         return dist
 
 
-    def get_clade_by_distance(self, helper, distance, it, factor):
+    def get_clade_by_distance(self, helper, distance, it):
         """
             Choose a clade, from this tree, that will be attached in another
             tree. It's chosen either randomly or after calculating the
@@ -300,7 +251,7 @@ class Node(Tree):
 
         if random.random() < 0.5:
             # calculating and re-scaling difference from [-1,1] to [0,1]
-            diff = 30 * (distance - helper.avg_dist) * factor
+            diff = 10 * (distance - helper.avg_dist)
             if diff > 1:
                 diff = 1
             elif diff < -1:
@@ -339,18 +290,6 @@ class Node(Tree):
 
 
 
-    def attach_clade_and_fix(self, helper, tree, clade):
-        """
-        Attaches a clade to the phylogeny tree and fixes everything
-        """
-        for n in clade.traverse():
-            if tree.k_losses_list[n.mutation_id] > helper.k:
-                n.delete(prevent_nondicotomic=False)
-        self.attach_clade(helper, tree, clade)
-        self.fix_for_losses(helper, tree)
-
-
-
     def attach_clade(self, helper, tree, clade):
         "Remove every node already in clade"
 
@@ -380,6 +319,34 @@ class Node(Tree):
                 nodes_list.pop(r)
 
         clade_destination.add_child(clade)
+
+
+
+    def losses_fix(self, helper, tree):
+        tree.phylogeny.update_losses_list(helper, tree)
+        families = []
+        nodes = self.get_cached_content()
+        for n in nodes:
+            if n.loss:
+
+                # elimina loss se ce ne sono troppe di un tipo
+                if tree.k_losses_list[n.mutation_id] >= helper.k:
+                    n.delete_b(helper, tree)
+
+                # elimina loss se non valida
+                else:
+                    genotypes = [0]*helper.mutation_number
+                    n.get_genotype_profile(genotypes)
+                    if min(genotypes) < 0:
+                        n.delete_b(helper, tree)
+
+                    # elimina loss se duplicata
+                    else:
+                        family = [n.mutation_id, n.up]
+                        if (family in families and n.children == []):
+                            n.delete_b(helper, tree)
+                        else:
+                            families.append(family)
 
 
 
