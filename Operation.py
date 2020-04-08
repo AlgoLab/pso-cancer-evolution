@@ -48,7 +48,7 @@ class Operation(object):
 
         # select a random node
         # root has no parent, hence cannot add a back mutation
-        # keep trying until we find a suitable node
+        # keep trying till we find a suitable node
         node = r.choice(keys)
         while node.up == None or node.up.up == None:
             node = r.choice(keys)
@@ -65,14 +65,14 @@ class Operation(object):
         # selecting one random ancestor, based on gamma probabilities
         i = 0
         r.shuffle(candidates)
-        trovato = False
-        while not(trovato) and i < len(candidates):
+        found = False
+        while not(found) and i < len(candidates):
             candidate = candidates[i]
             rand = r.random()
             if rand < helper.gamma[candidate.mutation_id]:
-                trovato = True
+                found = True
             i += 1
-        if not(trovato):
+        if not(found):
             return 1
 
         # Ensuring we have no more than k mutations per mutation type
@@ -96,7 +96,7 @@ class Operation(object):
         current = node.detach()
         par.add_child(node_deletion)
         node_deletion.add_child(current)
-        current.fix_for_losses(helper, tree)
+        # current.fix_for_losses(helper, tree)
         tree.operation = cls(cls.BACK_MUTATION, node_name_1=candidate.name, node_name_2=node_deletion.name)
         return 0
 
@@ -130,8 +130,6 @@ class Operation(object):
         tree.operation = cls(cls.SWITCH_NODES, node_name_1=u.name, node_name_2=v.name)
 
         u.swap(v)
-        u.fix_for_losses(helper, tree)
-        v.fix_for_losses(helper, tree)
         return 0
 
 
@@ -154,7 +152,6 @@ class Operation(object):
             prune_res = u.prune_and_reattach(v)
 
         tree.operation = cls(cls.PRUNE_REGRAFT, node_name_1=u.name, node_name_2=v.name)
-        u.fix_for_losses(helper, tree)
 
         return 0
 

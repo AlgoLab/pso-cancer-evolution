@@ -12,12 +12,10 @@ class Helper(object):
         self.max_time = max_time
         self.best_particle = None
 
-        # #riscalo w,c1,c2 che la loro somma faccia 3
-        somma = sum([w, c1, c2])/3
+        # #riscalo w,c1,c2 che la loro somma faccia 1
+        somma = sum([w, c1, c2])
         self.w = w/somma
         self.c1 = c1/somma
         self.c2 = c2/somma
 
         self.avg_dist = 0
-
-        self.t = 1

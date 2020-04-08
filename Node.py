@@ -30,11 +30,11 @@ class Node(Tree):
     def __repr__(self):
         return str(self.name) + ("-" if self.loss else "")
 
+
+
     def fix_for_losses(self, helper, tree, delete_only=False):
         # saving current children list, it will change if we delete
         # the current node
-        tree.phylogeny.update_losses_list(helper, tree)
-
         if helper.k == 0:
             return
         children = [c for c in self.children]
@@ -50,6 +50,35 @@ class Node(Tree):
                     self.delete_b(helper, tree)
                 else:
                     self.delete(prevent_nondicotomic=False)
+
+
+
+    def losses_fix(self, helper, tree):
+        tree.phylogeny.update_losses_list(helper, tree)
+        families = []
+        nodes = self.get_cached_content()
+        for n in nodes:
+            if n.loss:
+
+                # elimina loss se ce ne sono troppe di un tipo
+                if tree.k_losses_list[n.mutation_id] >= helper.k:
+                    n.delete_b(helper, tree)
+
+                # elimina loss se non valida
+                else:
+                    genotypes = [0]*helper.mutation_number
+                    n.get_genotype_profile(genotypes)
+                    if min(genotypes) < 0:
+                        n.delete_b(helper, tree)
+
+                    # elimina loss se duplicata
+                    else:
+                        family = [n.mutation_id, n.up]
+                        if (family in families and n.children == []):
+                            n.delete_b(helper, tree)
+                        else:
+                            families.append(family)
+
 
 
     def delete_b(self, helper, tree):
@@ -271,7 +300,7 @@ class Node(Tree):
 
         if random.random() < 0.5:
             # calculating and re-scaling difference from [-1,1] to [0,1]
-            diff = 10 * (distance - helper.avg_dist) * factor
+            diff = 30 * (distance - helper.avg_dist) * factor
             if diff > 1:
                 diff = 1
             elif diff < -1:
@@ -309,6 +338,19 @@ class Node(Tree):
                 assert(c.up == n)
 
 
+
+    def attach_clade_and_fix(self, helper, tree, clade):
+        """
+        Attaches a clade to the phylogeny tree and fixes everything
+        """
+        for n in clade.traverse():
+            if tree.k_losses_list[n.mutation_id] > helper.k:
+                n.delete(prevent_nondicotomic=False)
+        self.attach_clade(helper, tree, clade)
+        self.fix_for_losses(helper, tree)
+
+
+
     def attach_clade(self, helper, tree, clade):
         "Remove every node already in clade"
 
@@ -319,7 +361,7 @@ class Node(Tree):
         for cln in clade_to_be_attached:
             removed = []
             if cln.loss:
-                if clade_destination.is_mutation_already_lost(cln.mutation_id):
+                if clade_destination.is_mutation_already_lost(cln.mutation_id) or len(tree.losses_list) >= helper.max_deletions:
                     cln.delete(prevent_nondicotomic=False)
                 else:
                     tree.losses_list.append(cln)
@@ -352,18 +394,6 @@ class Node(Tree):
         tree.losses_list = l
         tree.k_losses_list = kl
 
-
-
-    def attach_clade_and_fix(self, helper, tree, clade):
-        """
-        Attaches a clade to the phylogeny tree and fixes everything
-        """
-        for n in clade.traverse():
-            if tree.k_losses_list[n.mutation_id] > helper.k:
-                n.delete(prevent_nondicotomic=False)
-        self.attach_clade(helper, tree, clade)
-        self.fix_for_losses(helper, tree)
-        # self.check_integrity()
 
 
     @classmethod

@@ -7,6 +7,8 @@ import random
 from Operation import Operation as Op
 from Helper import Helper
 from datetime import datetime
+from collections import deque
+import sys
 
 class Particle(object):
 
@@ -16,7 +18,7 @@ class Particle(object):
         self.best = self.current_tree # best tree found by this particle
 
         self.max_stall_iterations = 200
-        self.tolerance = 0.002
+        self.tolerance = 0.003
 
 
 
@@ -36,26 +38,33 @@ class Particle(object):
     def run_iterations(self, iterations, helper, ns, lock):
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
-        improvements = [1] * self.max_stall_iterations #queue
+        improvements = deque([1] * self.max_stall_iterations) # queue
+        bm = False
+        ops = [2,3]
 
         for it in range(iterations):
-            self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
+            self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock, ops)
 
             if self.number == 0:
 
                 lh = ns.best_swarm.likelihood
-                improvements.pop(0)
+                improvements.popleft()
                 improvements.append(1-lh/old_lh)
                 old_lh = lh
 
                 if it % 10 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
+                if not(bm) and sum(improvements) < self.tolerance:
+                    improvements = deque([1] * self.max_stall_iterations)
+                    bm = True
+                    ops = [0,1]
+
                 lock.acquire()
 
                 ns.best_iteration_likelihoods = self.append_to_shared_array(ns.best_iteration_likelihoods, lh)
 
-                if ns.automatic_stop and (sum(improvements) < self.tolerance or (time.time() - start_time) >= (helper.max_time-2)):
+                if ns.automatic_stop and (sum(improvements) < self.tolerance or (time.time() - start_time) >= (helper.max_time)):
                     ns.stop = True
 
                 lock.release()
@@ -71,7 +80,7 @@ class Particle(object):
 
 
 
-    def particle_iteration(self, it, helper, best_swarm, ns, lock):
+    def particle_iteration(self, it, helper, best_swarm, ns, lock, ops):
         start_it = time.time()
         tree_copy = self.current_tree.copy()
 
@@ -82,6 +91,7 @@ class Particle(object):
             clade_to_be_attached = clade_to_be_attached.copy().detach()
             clade_destination = random.choice(tree_copy.phylogeny.get_clades())
             clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
+            tree_copy.phylogeny.losses_fix(helper, tree_copy)
 
         # movement to swarm best
         swarm_distance = tree_copy.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
@@ -90,16 +100,12 @@ class Particle(object):
             clade_to_be_attached = clade_to_be_attached.copy().detach()
             clade_destination = random.choice(tree_copy.phylogeny.get_clades())
             clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
+            tree_copy.phylogeny.losses_fix(helper, tree_copy)
 
         # self movement
-        ops = [2,3]
-        n_op = int(helper.w * random.random() * 2)
-        if n_op < 1:
-            n_op = 1
-        elif n_op > 3:
-            n_op = 3
-        for i in range(n_op):
-            Op.tree_operation(helper, tree_copy, random.choice(ops))
+        op = random.choice(ops)
+        Op.tree_operation(helper, tree_copy, op)
+        tree_copy.phylogeny.losses_fix(helper, tree_copy)
 
         # updating log likelihood and bests
         lh = Tree.greedy_loglikelihood(helper, tree_copy)
@@ -124,22 +130,3 @@ class Particle(object):
         ns.particle_iteration_times = tmp
 
         lock.release()
-
-
-
-    def add_back_mutation(self, helper, data):
-        start_it = time.time()
-        tree_copy = self.current_tree.copy()
-
-        old_lh = tree_copy.likelihood
-        Op.tree_operation(helper, tree_copy, 0)
-        tree_copy.likelihood = Tree.greedy_loglikelihood(helper, tree_copy)
-        new_lh = tree_copy.likelihood
-
-        if new_lh > old_lh:
-            self.current_tree = tree_copy.copy()
-            self.best = self.current_tree
-
-        data.particle_iteration_times[self.number].append(time.time() - start_it)
-
-        return data

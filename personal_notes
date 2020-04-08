@@ -13,12 +13,14 @@ DONE:
 - changed clade attachment algorithm and changed particle iteration
 - added stopping criteria if iterations not in input
 - added automatic calculation of the number of particles
+- total parallel execution of the software
 
 
 
 TODO:
 -> migliorare risultati
 -> aggiungere nuove info a data???
--> provare a fare al posto del vecchio backmutations, di nuovo iterazioni con particles (clade attachments + operations 0-1)
--> calcolare effettivamente quante iterazioni fare di adding-backmutations in base a maxtime (se iterations==0)
--> capire se effettivamente servono w,c1,c2 e farci dei test
+-> capire se effettivamente w,c1,c2 servono e farci dei test
+
+-> sistemare il n° di iterazionibm quando iterations!=0
+-> non ci sono più nel file info le iterations per particles

@@ -5,9 +5,7 @@ import copy
 import math
 
 # for a uniform random trees generation
-lista3 = []
-lista4 = []
-lista5 = []
+used_combinations = []
 
 class Tree(object):
 
@@ -49,53 +47,42 @@ class Tree(object):
         return t
 
 
-    @classmethod
-    def generate_tree(cls, mutations):
-        global lista3
-        global lista4
-        global lista5
-        alfabeto = [i for i in range(mutations)]
-        lunghezza_parole = 5
-        tree = None
-        accettabile = False
 
+    @classmethod
+    def generate_tree(cls, mutation_names):
+        """
+            Generate a new tree without using combinations of 3, 4 or 5
+            mutations already used in other trees, in order to have the most
+            random uniform generation possible.
+        """
+        global used_combinations
+        valid = False
+        mutations = [i for i in range(mutation_names)]
         attempts = 0
-        while accettabile == False:
-            tree = alfabeto.copy()
+
+        while not valid:
+            tree = mutations.copy()
             r.shuffle(tree, r.random)
 
-            accettabile = True
-            for i in range (len(tree)-lunghezza_parole+1):
-                temp = tree[i:i+lunghezza_parole]
-                if temp in lista5:
-                    accettabile = False
+            temp_list = []
 
-            for i in range (len(tree)-lunghezza_parole+2):
-                temp = tree[i:i+lunghezza_parole-1]
-                if temp in lista4:
-                    accettabile = False
+            valid = True
+            for length in [3,4,5]:
+                for i in range (len(tree) - length + 1):
+                    temp = tree[i : i + length]
+                    temp_list.append(temp)
+                    if temp in used_combinations:
+                        valid = False
 
-            for i in range (len(tree)-lunghezza_parole+3):
-                temp = tree[i:i+lunghezza_parole-2]
-                if temp in lista3:
-                    accettabile = False
-
-            if accettabile == True:
-                for i in range (len(tree)-lunghezza_parole+1):
-                    lista5.append(tree[i:i+lunghezza_parole])
-                for i in range (len(tree)-lunghezza_parole+2):
-                    lista4.append(tree[i:i+lunghezza_parole-1])
-                for i in range (len(tree)-lunghezza_parole+3):
-                    lista3.append(tree[i:i+lunghezza_parole-2])
-
-            attempts += 1
-            if attempts == 200:
-                lista3 = []
-                lista4 = []
-                lista5 = []
+            if valid:
+                used_combinations += temp_list
+            elif attempts > 200:
+                used_combinations = []
                 attempts = 0
+            attempts += 1
 
         return tree
+
 
 
     @classmethod
@@ -106,9 +93,11 @@ class Tree(object):
         return t
 
 
+
     @classmethod
     def germline_node(cls):
         return Node("germline", None, -1, 0)
+
 
 
     @classmethod

@@ -77,7 +77,7 @@ def init(nparticles, iterations, matrix, mutation_number, mutation_names, cells,
     global helper
     global data
     helper = Helper(matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, w, c1, c2, max_deletions, max_time)
-    data = Data(nparticles, iterations)
+    data = Data(nparticles)
     pso(nparticles, iterations)
     data.helper = helper
     return data, helper
@@ -89,30 +89,23 @@ def pso(nparticles, iterations):
     global data
 
     print("\n • PARTICLES START-UP")
-    particles = pso_start_up(nparticles)
+    particles = pso_initialization(nparticles)
 
     print("\n • PSO RUNNING...")
     print("\t  Time\t\t Best likelihood so far")
     pso_parallel_execution(particles, iterations)
 
-    print("\n • ADDING BACKMUTATIONS...")
-    pso_add_backmutations()
-
-    data.calculate_accuracy(helper)
-
     print("\n • FINAL RESULTS")
     print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_end - data.pso_start, 2))))
     print("\t- best likelihood: %s" % str(round(helper.best_particle.best.likelihood, 2)))
-    print("\t- accuracy: %s%%\n" % str(round(data.accuracy, 1)))
 
 
 
-def pso_start_up(nparticles):
+def pso_initialization(nparticles):
     global helper
     global data
     data.initialization_start = time.time()
 
-    # Random position, each tree is a binary tree at the beginning
     particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n) for n in range(nparticles)]
     helper.best_particle = particles[0]
     for p in particles:
@@ -122,7 +115,6 @@ def pso_start_up(nparticles):
     data.starting_likelihood = helper.best_particle.best.likelihood
 
     data.initialization_end = time.time()
-
     return particles
 
 
@@ -156,33 +148,6 @@ def pso_parallel_execution(particles, iterations):
     data.best_iteration_likelihoods = ns.best_iteration_likelihoods
     data.particle_iteration_times = ns.particle_iteration_times
     helper.best_particle.best = ns.best_swarm.copy()
-
-
-
-def pso_add_backmutations():
-    global helper
-    global data
-
-    helper.best_particle.current_tree = helper.best_particle.best
-
-    iterations_performed = min([len(t) for t in data.particle_iteration_times])
-    end = (iterations_performed + int(iterations_performed / 3)) if (iterations_performed < 300) else (iterations_performed + 100)
-
-    for it in range(iterations_performed + 1, end):
-        start_it = time.time()
-
-        data = helper.best_particle.add_back_mutation(helper, data)
-
-        lh = helper.best_particle.best.likelihood
-        data.best_iteration_likelihoods.append(lh)
-
-        if it % 10 == 0:
-            print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
-
-    data.set_iterations(end)
-
-    # save how many iterations each particle did
-    data.iterations_performed = [len(t) for t in data.particle_iteration_times]
 
     data.pso_end = time.time()
 

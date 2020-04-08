@@ -39,8 +39,8 @@ def setup_arguments(arguments):
         raise Exception("ERROR! w,c1,c2 are all = 0")
     if max_deletions < 0:
         raise Exception("ERROR! maxdel < 0")
-    if max_time < 0:
-        raise Exception("ERROR! maxtime < 0")
+    if max_time < 30:
+        raise Exception("ERROR! minimum time limit is 30 seconds")
 
 
     with open(arguments['--infile'], 'r') as f:

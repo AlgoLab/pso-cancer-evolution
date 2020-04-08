@@ -7,34 +7,27 @@ import numpy as np
 
 class Data(object):
 
-    def __init__(self, nofparticles, iterations):
+    def __init__(self, nofparticles):
         self.pso_start = 0
         self.pso_end = 0
         self.initialization_start = 0
         self.initialization_end = 0
         self.initialization_times = []
         self.starting_likelihood = 0
-
         self.nofparticles = nofparticles
-        self.iterations = iterations
         self.particle_iteration_times = [[] for p in range(nofparticles)]
-
         self.best_iteration_likelihoods = []
-
         self.true_positives = 0
         self.true_negatives = 0
         self.false_negatives = 0
         self.false_positives = 0
         self.missing_values = 0
-
         self.true_positives_relative = 0
         self.true_negatives_relative = 0
         self.false_negatives_relative = 0
         self.false_positives_relative = 0
         self.missing_values_relative = 0
         self.accuracy = 0
-
-        self.iterations_performed = []
 
 
 
@@ -47,11 +40,6 @@ class Data(object):
         for i in range(self.nofparticles):
             avg[i] = np.mean(self.particle_iteration_times[i])
         return avg
-
-
-
-    def set_iterations(self, iterations):
-        self.iterations = iterations
 
 
 
@@ -68,6 +56,7 @@ class Data(object):
 
 
     def summary(self, helper, dir):
+        self.calculate_accuracy(helper)
 
         # tree image
         helper.best_particle.best.phylogeny.save(dir + "/best.gv")
@@ -85,7 +74,7 @@ class Data(object):
         f = open(dir + "/results.txt", "w+")
         f.write(">> Number of particles: %d\n" % self.nofparticles)
         f.write(">> Number of iterations for each particle:\n")
-        for i,its in enumerate(self.iterations_performed):
+        for i,its in enumerate([len(u) for u in self.particle_iteration_times]):
             f.write("\t- particle %d: %d\n" % (i, its))
         f.write("\n>> Number of cells: %d\n" % helper.cells)
         f.write(">> Number of mutations: %d\n" % helper.mutation_number)
@@ -106,7 +95,6 @@ class Data(object):
         f.write("\nBest Tree in Tikz format:\n")
         f.write(helper.best_particle.best.phylogeny.to_tikz())
         f.close()
-
 
 
 
