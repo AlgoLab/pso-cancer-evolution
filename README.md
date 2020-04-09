@@ -68,7 +68,7 @@ Done!
 **Optional input parameters**
 - `--mutfile [STRING]`: Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
 - `--particles [INT]`: Number of particles to use for PSO. If not used or zero, it will be estimated based on the number of particles and cells [default: 0]
-- `--iterations [INT]`: Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after around <maxtime> of total execution) [default: 0].
+- `--iterations [INT]`: Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
 - `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
@@ -77,9 +77,10 @@ Done!
 - `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 300].
 - `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
 
-## Example
+## Examples
 
 ```shell
+(env) $ python3 psosc.py --infile "data/hou.txt"
 (env) $ python3 psosc.py --infile "data/gawad2.txt" --particles 10 --iterations 20 --k 3 --maxdel 5 --mutfile "data/gawad2_mut.txt"
 ```
 

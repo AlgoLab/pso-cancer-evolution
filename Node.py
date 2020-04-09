@@ -178,10 +178,9 @@ class Node(Tree):
         """
 
         # sommo il numero di mutazioni acquisite per ogni nodo dell'albero
-        nodes = self.get_cached_content()
         mutations = []
         s = 0
-        for n in nodes:
+        for n in self.traverse():
             n_genotype = [0] * helper.mutation_number
             n.get_genotype_profile(n_genotype)
             sum_ = 0
@@ -208,24 +207,22 @@ class Node(Tree):
             totally different. It is obtained comparing the genotype profiles
             of the two trees.
         """
-        nodes1 = self.get_cached_content()
         genotypes1 = {}
-        for n in nodes1:
+        for n in self.traverse():
             if not n.loss:
                 tmp = [0 for j in range(mutation_number)]
                 n.get_genotype_profile(tmp)
                 genotypes1[n.mutation_id] = tmp
 
-        nodes2 = tree.get_cached_content()
         genotypes2 = {}
-        for n in nodes2:
+        for n in tree.traverse():
             if not n.loss:
                 tmp = [0 for j in range(mutation_number)]
                 n.get_genotype_profile(tmp)
                 genotypes2[n.mutation_id] = tmp
 
         equal = 0
-        for n in nodes1:
+        for n in self.traverse():
             equal += np.sum(genotypes1[n.mutation_id] == genotypes2[n.mutation_id])
 
         total = len(genotypes1.values())
@@ -242,8 +239,7 @@ class Node(Tree):
             in the past clade attachments: based on that, it chooses
             the height of the clade, and randomly, it chooses which clade.
         """
-        nodes = list(self.get_cached_content().keys())
-        max_h = max([n.get_height() for n in nodes])
+        max_h = self.get_height()
 
         if random.random() < 0.5:
             # calculating and re-scaling difference from [-1,1] to [0,1]
@@ -258,6 +254,7 @@ class Node(Tree):
         else:
             level = random.choice([x for x in range(1, max_h)])
 
+        nodes = list(self.get_cached_content().keys())
         random.shuffle(nodes)
         for n in nodes:
             if n.get_height() == level:
@@ -318,7 +315,6 @@ class Node(Tree):
     def losses_fix(self, helper, tree):
         tree.update_losses_list()
         families = []
-
         for n in self.traverse():
             if n.loss:
 

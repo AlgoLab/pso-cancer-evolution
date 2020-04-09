@@ -116,15 +116,13 @@ class Particle(object):
         self.current_tree = tree_copy
 
         # update particle best
-        best_particle_lh = self.best.likelihood
-        if lh > best_particle_lh:
+        if lh > self.best.likelihood:
             self.best = tree_copy
 
         lock.acquire()
 
         # update swarm best
-        best_swarm_lh = ns.best_swarm.likelihood
-        if lh > best_swarm_lh:
+        if lh > ns.best_swarm.likelihood:
             ns.best_swarm = tree_copy
 
         # update average distance
