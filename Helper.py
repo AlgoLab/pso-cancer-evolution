@@ -1,4 +1,6 @@
+
 class Helper(object):
+    
     def __init__(self, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time):
         self.matrix = matrix
         self.mutation_number = mutation_number

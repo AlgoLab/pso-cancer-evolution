@@ -157,41 +157,35 @@ class Operation(object):
 
 
     @classmethod
-    def prob(cls, I, E, genotypes, helper, particle, data=None):
+    def prob(cls, I, E, alpha, beta):
 
-        fp = 0
-        fn = 0
-        tp = 0
-        tn = 0
-        missing = 0
+        fp = 0 # false positives
+        fn = 0 # false negatives
+        tp = 0 # true positives
+        tn = 0 # true negatives
+        missing = 0 # missing values
 
         p = 0
         if I == 0:
             if E == 0:
-                # TODO: sigma
-                if data is not None:
-                    tn += 1
-                p = 1 - helper.beta
+                tn += 1
+                p = 1 - beta
             elif E == 1:
-                if data is not None:
-                    fn += 1
-                p = helper.alpha
+                fn += 1
+                p = alpha
             else:
                 raise SystemError("Unknown value for E: %d" % E)
         elif I == 1:
             if E == 0:
-                if data is not None:
-                    fp += 1
-                p = helper.beta
+                fp += 1
+                p = beta
             elif E == 1:
-                if data is not None:
-                    tp += 1
-                p = 1 - helper.alpha
+                tp += 1
+                p = 1 - alpha
             else:
                 raise SystemError("Unknown value for E: %d" % E)
         elif I == 2:
-            if data:
-                missing += 1
+            missing += 1
             p = 1
         else:
             raise SystemError("Unknown value for I: %d" % I)

@@ -1,6 +1,6 @@
 from Node import Node
 from Operation import Operation as Op
-import random as r
+import random
 import copy
 import math
 
@@ -21,14 +21,15 @@ class Tree(object):
         self.debug = False
 
 
-    def calculate_losses_list(self, k):
-        losses_list = []
-        k_losses_list = [0] * self.mutations
+    def update_losses_list(self):
+        ll = []
+        kll = [0] * self.mutations
         for n in self.phylogeny.traverse():
             if n.loss:
-                losses_list.append(n)
-                k_losses_list[n.mutation_id] += 1
-        return losses_list, k_losses_list
+                ll.append(n)
+                kll[n.mutation_id] += 1
+        self.losses_list = ll
+        self.k_losses_list = kll
 
 
     def copy(self):
@@ -49,7 +50,38 @@ class Tree(object):
 
 
     @classmethod
-    def generate_tree(cls, mutation_names):
+    def random(cls, cells, mutations, mutation_names):
+        t = Tree(cells, mutations)
+        random_tree = cls._generate_random_btree(mutations, mutation_names)
+        t.phylogeny = random_tree
+        return t
+
+
+
+    @classmethod
+    def _generate_random_btree(cls, mutations, mutation_names):
+        """ Generates a random binary tree """
+        root = Node("germline", None, -1, 0)
+        rantree = cls._new_unique_tree(mutations)
+
+        nodes = [root]
+        append_node = 0
+        i = 0
+        while i < mutations:
+            nodes.append(Node(mutation_names[rantree[i]], nodes[append_node], rantree[i]))
+            i += 1
+
+            if i < mutations:
+                nodes.append(Node(mutation_names[rantree[i]], nodes[append_node], rantree[i]))
+            append_node += 1
+            i += 1
+
+        return root
+
+
+
+    @classmethod
+    def _new_unique_tree(cls, mutation_names):
         """
             Generate a new tree without using combinations of 3, 4 or 5
             mutations already used in other trees, in order to have the most
@@ -62,7 +94,7 @@ class Tree(object):
 
         while not valid:
             tree = mutations.copy()
-            r.shuffle(tree, r.random)
+            random.shuffle(tree, random.random)
 
             temp_list = []
 
@@ -86,49 +118,7 @@ class Tree(object):
 
 
     @classmethod
-    def random(cls, cells, mutations, mutation_names):
-        t = Tree(cells, mutations)
-        random_tree = cls._generate_random_btree(mutations, mutation_names)
-        t.phylogeny = random_tree
-        return t
-
-
-
-    @classmethod
-    def germline_node(cls):
-        return Node("germline", None, -1, 0)
-
-
-
-    @classmethod
-    def _generate_random_btree(cls, mutations, mutation_names):
-        """ Generates a random binary tree """
-        root = cls.germline_node()
-        rantree = cls.generate_tree(mutations)
-        # print(rantree)
-
-        nodes = [root]
-        append_node = 0
-        i = 0
-        while i < mutations:
-            nodes.append(
-                Node(mutation_names[rantree[i]], nodes[append_node], rantree[i])
-            )
-            i += 1
-
-            if i < mutations:
-                nodes.append(
-                    Node(mutation_names[rantree[i]], nodes[append_node], rantree[i])
-                )
-            append_node += 1
-            i += 1
-
-        return root
-
-
-
-    @classmethod
-    def greedy_loglikelihood_with_data(cls, helper, tree, data=None):
+    def greedy_loglikelihood_with_data(cls, helper, tree, data):
         "Gets maximum likelihood of a tree"
 
         nodes_list = tree.phylogeny.get_cached_content()
@@ -156,7 +146,7 @@ class Tree(object):
                 values = [0]*5
 
                 for j in range(helper.mutation_number):
-                    p, tmp_values = Op.prob(helper.matrix[i][j], node_genotypes[n][j], node_genotypes, helper, tree, data)
+                    p, tmp_values = Op.prob(helper.matrix[i][j], node_genotypes[n][j], helper.alpha, helper.beta)
                     lh += math.log(p)
                     values = [sum(x) for x in zip(values, tmp_values)]
 

@@ -1,12 +1,8 @@
 import random
-import networkx as nx
 from ete3 import Tree
 from graphviz import Source
-import operator
 import numpy as np
-import matplotlib.pyplot as plt
 import json
-import copy
 
 class Node(Tree):
 
@@ -238,7 +234,7 @@ class Node(Tree):
         return dist
 
 
-    def get_clade_by_distance(self, helper, distance, it):
+    def get_clade_by_distance(self, helper, distance):
         """
             Choose a clade, from this tree, that will be attached in another
             tree. It's chosen either randomly or after calculating the
@@ -261,9 +257,6 @@ class Node(Tree):
 
         else:
             level = random.choice([x for x in range(1, max_h)])
-
-        # update average distance
-        helper.avg_dist = (helper.avg_dist * it + distance) / (it + 1)
 
         random.shuffle(nodes)
         for n in nodes:
@@ -300,7 +293,7 @@ class Node(Tree):
         for cln in clade_to_be_attached:
             removed = []
             if cln.loss:
-                if clade_destination.is_mutation_already_lost(cln.mutation_id) or len(tree.losses_list) >= helper.max_deletions:
+                if clade_destination.is_mutation_already_lost(cln.mutation_id):
                     cln.delete(prevent_nondicotomic=False)
                 else:
                     tree.losses_list.append(cln)
@@ -323,14 +316,14 @@ class Node(Tree):
 
 
     def losses_fix(self, helper, tree):
-        tree.phylogeny.update_losses_list(helper, tree)
+        tree.update_losses_list()
         families = []
-        nodes = self.get_cached_content()
-        for n in nodes:
+
+        for n in self.traverse():
             if n.loss:
 
                 # elimina loss se ce ne sono troppe di un tipo
-                if tree.k_losses_list[n.mutation_id] >= helper.k:
+                if tree.k_losses_list[n.mutation_id] > helper.k or len(tree.losses_list) > helper.max_deletions:
                     n.delete_b(helper, tree)
 
                 # elimina loss se non valida
@@ -347,19 +340,6 @@ class Node(Tree):
                             n.delete_b(helper, tree)
                         else:
                             families.append(family)
-
-
-
-    def update_losses_list(self, helper, tree):
-        l = []
-        kl = [0] * helper.mutation_number
-        nodes = tree.phylogeny.get_cached_content()
-        for n in nodes:
-            if n.loss:
-                l.append(n)
-                kl[n.mutation_id] += 1
-        tree.losses_list = l
-        tree.k_losses_list = kl
 
 
 
