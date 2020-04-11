@@ -5,21 +5,20 @@
 
 The goal is to find an optimal tree given the input matrix.
 
-###Procedure
-  - creating particles
-  - every particle run independently from the others:
-      - inertia movement (random operation)
-      - movement to best particle tree (clade attachment from the best particle tree to the current tree)
-      - movement to best swarm tree (clade attachment from the best swarm tree to the current tree)
-      - update possible new particle best and swarm best
-      - stops when one of the stopping criteria is met
+### Procedure
+  1. Create particles
+  2. Every particle run independently from the others:
+      a. Inertia movement (random operation)
+      b. Movement to best particle tree (clade attachment from the best particle tree to the current tree)
+      c. Movement to best swarm tree (clade attachment from the best swarm tree to the current tree)
+      d. Update possible new particle best and swarm best
+      e. Stop when one of the stopping criteria is met
 
 The possible operations are:
-  0) add new random backmutation
-  1) remove random backmutation
-  2) swap two random nodes
-  3) prune-regraft two random nodes
-
+  - add new random backmutation (0)
+  - remove random backmutation (1)
+  - swap two random nodes (2)
+  - prune-regraft two random nodes (3)
 
 In the first part we use just 2/3 operations, in the second part just 0/1 operations.
 We switch from the first to the second part when:
@@ -85,4 +84,5 @@ Done!
 
 
 ## Info
+Author: Leonardo Riva - Università degli studi Milano Bicocca
 Project based on: https://github.com/IAL32/pso-cancer-evolution
