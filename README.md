@@ -6,13 +6,13 @@
 The goal is to find an optimal tree given the input matrix.
 
 ### Procedure
-  1. Create particles
-  2. Every particle run independently from the others:
-      a. Inertia movement (random operation)
-      b. Movement to best particle tree (clade attachment from the best particle tree to the current tree)
-      c. Movement to best swarm tree (clade attachment from the best swarm tree to the current tree)
-      d. Update possible new particle best and swarm best
-      e. Stop when one of the stopping criteria is met
+  - Create particles
+  - Every particle run independently from the others:
+      - Inertia movement (random operation)
+      - Movement to best particle tree (clade attachment from the best particle tree to the current tree)
+      - Movement to best swarm tree (clade attachment from the best swarm tree to the current tree)
+      - Update possible new particle best and swarm best
+      - Stop when one of the stopping criteria is met
 
 The possible operations are:
   - add new random backmutation (0)
