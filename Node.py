@@ -34,9 +34,6 @@ class Node(Tree):
             tree.k_losses_list[self.mutation_id] -= 1
             self.delete(prevent_nondicotomic=False)
 
-        # TODO: workout how can sigma be done
-        # for i in range(helper.cells):
-
 
     def find_node_by_uid(self, uid_):
         return next(self.iter_search_nodes(uid=uid_), None)
@@ -102,17 +99,14 @@ class Node(Tree):
         return height + 1
 
 
-    def copy_from(self, node):
-        self.name = node.name
-        self.mutation_id = node.mutation_id
-        self.loss = node.loss
-
 
     def swap(self, node):
         """ Switch this data with with that of another node """
-        tmp_node = Node(self.name, None, self.mutation_id, self.loss)
-        self.copy_from(node)
-        node.copy_from(tmp_node)
+        self.name, node.name = node.name, self.name
+        self.mutation_id, node.mutation_id = node.mutation_id, self.mutation_id
+        self.loss, node.loss = node.loss, self.loss
+
+
 
 
     def _get_parent_at_height(self, height=1):
@@ -314,28 +308,29 @@ class Node(Tree):
 
     def losses_fix(self, helper, tree):
         tree.update_losses_list()
-        families = []
-        for n in self.traverse():
-            if n.loss:
+        if tree.losses_list != []:
+            families = []
+            for n in self.traverse():
+                if n.loss:
 
-                # elimina loss se ce ne sono troppe di un tipo
-                if tree.k_losses_list[n.mutation_id] > helper.k or len(tree.losses_list) > helper.max_deletions:
-                    n.delete_b(helper, tree)
-
-                # elimina loss se non valida
-                else:
-                    genotypes = [0]*helper.mutation_number
-                    n.get_genotype_profile(genotypes)
-                    if min(genotypes) < 0:
+                    # elimina loss se ce ne sono troppe di un tipo
+                    if tree.k_losses_list[n.mutation_id] > helper.k or len(tree.losses_list) > helper.max_deletions:
                         n.delete_b(helper, tree)
 
-                    # elimina loss se duplicata
+                    # elimina loss se non valida
                     else:
-                        family = [n.mutation_id, n.up]
-                        if (family in families and n.children == []):
+                        genotypes = [0]*helper.mutation_number
+                        n.get_genotype_profile(genotypes)
+                        if min(genotypes) < 0:
                             n.delete_b(helper, tree)
+
+                        # elimina loss se duplicata
                         else:
-                            families.append(family)
+                            family = [n.mutation_id, n.up]
+                            if (family in families and n.children == []):
+                                n.delete_b(helper, tree)
+                            else:
+                                families.append(family)
 
 
 

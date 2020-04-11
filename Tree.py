@@ -1,10 +1,9 @@
 from Node import Node
 from Operation import Operation as Op
 import random
-import copy
 import math
 
-# for a uniform random trees generation
+# for a uniform random tree generation
 used_combinations = []
 
 class Tree(object):
@@ -17,8 +16,6 @@ class Tree(object):
         self.best_sigma = [0] * cells
         self.likelihood = float("-inf")
         self.phylogeny = None
-        self.operation = None
-        self.debug = False
 
 
     def update_losses_list(self):
@@ -41,10 +38,6 @@ class Tree(object):
             if n.loss:
                 t.losses_list.append(n)
                 t.k_losses_list[n.mutation_id] += 1
-        if self.operation == None:
-            t.operation = None
-        else:
-            t.operation = Op(self.operation.type, self.operation.node_name_1, self.operation.node_name_2, self.operation.node_name_3)
         return t
 
 

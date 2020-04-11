@@ -102,7 +102,7 @@ class Data(object):
     def runs_summary(cls, runs, runs_data, dir):
         likelihoods = []
         for data in runs_data:
-            likelihoods.append(data.helper.best_particle.best.likelihood)
+            likelihoods.append(max(data.best_iteration_likelihoods))
 
         ax = plt.figure().gca()
         plt.title("Likelihood per run")
@@ -117,6 +117,16 @@ class Data(object):
         f.write("\\begin{tabular}{*{5}{c}}\n")
         f.write("\tParticles & Iterations & StartingLikelihood & Final Likelihood & CPU Time (s) \\\\ \\midrule \\midrule\n")
         for data in runs_data:
-            f.write("\t%s & %s & %s & %s & %s \\\\\n" % (data.nofparticles, data.iterations, data.starting_likelihood, data.helper.best_particle.best.likelihood, data.pso_passed_seconds()))
+            iterations = [len(u) for u in data.particle_iteration_times]
+            np = str(data.nofparticles)
+            if min(iterations) == max(iterations):
+                its = str(iterations[0])
+            else:
+                its = str("[" + str(min(iterations)) + "-" + str(max(iterations)) + "]")
+            lh1 = data.starting_likelihood
+            lh2 = max(data.best_iteration_likelihoods)
+            t = data.pso_end-data.pso_start
+
+            f.write("\t%s & %s & %f & %f & %f \\\\\n" % (np, its, lh1, lh2, t))
         f.write("\\end{tabular}")
         f.close()

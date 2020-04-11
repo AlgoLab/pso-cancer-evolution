@@ -62,7 +62,7 @@ class Particle(object):
                     # if iterations given in input and 3/4 of iterations
                     b2 = not(ns.automatic_stop) and it >= (3/4)*iterations
 
-                    # if iterations not given
+                    # if iterations not given in input and stuck on fitness value
                     b3 = ns.automatic_stop and sum(improvements) < self.tolerance
 
                     if b1 or b2 or b3:

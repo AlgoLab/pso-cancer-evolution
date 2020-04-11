@@ -1,9 +1,9 @@
 from Node import Node
-import random as r
+import random
 import numpy
 
 def accept(currentIteration, iterations):
-    return r.random() < (currentIteration / iterations)
+    return random.random() < (currentIteration / iterations)
 
 class Operation(object):
 
@@ -12,13 +12,6 @@ class Operation(object):
     SWITCH_NODES = 2
     PRUNE_REGRAFT = 3
 
-    NUMBER = 4
-
-    def __init__(self, type, node_name_1 = None, node_name_2 = None, node_name_3 = None):
-        self.type = type
-        self.node_name_1 = node_name_1
-        self.node_name_2 = node_name_2
-        self.node_name_3 = node_name_3
 
 
     @classmethod
@@ -39,6 +32,7 @@ class Operation(object):
             raise SystemError("Something has happened while choosing an operation")
 
 
+
     @classmethod
     def add_back_mutation(cls, helper, tree):
 
@@ -49,9 +43,9 @@ class Operation(object):
         # select a random node
         # root has no parent, hence cannot add a back mutation
         # keep trying till we find a suitable node
-        node = r.choice(keys)
+        node = random.choice(keys)
         while node.up == None or node.up.up == None:
-            node = r.choice(keys)
+            node = random.choice(keys)
 
         # if losses list has reached its maximum, then we can't procede
         if (len(tree.losses_list) >= helper.max_deletions):
@@ -63,15 +57,12 @@ class Operation(object):
             return 1
 
         # selecting one random ancestor, based on gamma probabilities
-        i = 0
-        r.shuffle(candidates)
         found = False
-        while not(found) and i < len(candidates):
-            candidate = candidates[i]
-            rand = r.random()
-            if rand < helper.gamma[candidate.mutation_id]:
+        while not found and len(candidates) > 0:
+            candidate = random.choice(candidates)
+            candidates.remove(candidate)
+            if random.random() < helper.gamma[candidate.mutation_id]:
                 found = True
-            i += 1
         if not(found):
             return 1
 
@@ -83,11 +74,11 @@ class Operation(object):
         if (node.is_mutation_already_lost(candidate.mutation_id)):
             return 1
 
-        node_deletion = Node(candidate.name, None, candidate.mutation_id, True)
-
-        if (tree.k_losses_list[node_deletion.mutation_id] >= helper.k):
+        # If there are already k mutation of candidate mutation_id
+        if (tree.k_losses_list[candidate.mutation_id] >= helper.k):
             return 1
 
+        node_deletion = Node(candidate.name, None, candidate.mutation_id, True)
         tree.losses_list.append(node_deletion)
         tree.k_losses_list[node_deletion.mutation_id] += 1
 
@@ -96,41 +87,39 @@ class Operation(object):
         current = node.detach()
         par.add_child(node_deletion)
         node_deletion.add_child(current)
-        # current.fix_for_losses(helper, tree)
-        tree.operation = cls(cls.BACK_MUTATION, node_name_1=candidate.name, node_name_2=node_deletion.name)
         return 0
+
 
 
     @classmethod
     def mutation_delete(cls, helper, tree):
         if (len(tree.losses_list) == 0):
             return 1
-
-        node_delete = r.choice(tree.losses_list)
-        tree.operation = cls(cls.DELETE_MUTATION, node_name_1=node_delete.name)
+        node_delete = random.choice(tree.losses_list)
         node_delete.delete_b(helper, tree)
         return 0
+
 
 
     @classmethod
     def switch_nodes(cls, helper, tree):
         nodes = tree.phylogeny.get_cached_content()
-        keys = list(nodes.keys())
 
+        keys = list(nodes.keys())
         u = None
         while (u == None or u.up == None or u.loss):
-            u = r.choice(keys)
+            u = random.choice(keys)
             keys.remove(u)
-        v = None
-        keys = list(nodes.keys())
-        while (v == None or v.up == None or v.loss or u.name == v.name):
-            v = r.choice(keys)
-            keys.remove(v)
 
-        tree.operation = cls(cls.SWITCH_NODES, node_name_1=u.name, node_name_2=v.name)
+        keys = list(nodes.keys())
+        v = None
+        while (v == None or v.up == None or v.loss or u.name == v.name):
+            v = random.choice(keys)
+            keys.remove(v)
 
         u.swap(v)
         return 0
+
 
 
     @classmethod
@@ -139,21 +128,23 @@ class Operation(object):
 
         prune_res = -1
         while prune_res != 0:
+
             keys = list(nodes_list.keys())
             u = None
             while (u == None or u.up == None or u.loss):
-                u = r.choice(keys)
+                u = random.choice(keys)
                 keys.remove(u)
-            v = None
+
             keys = list(nodes_list.keys())
+            v = None
             while (v == None or v.up == None or v.loss):
-                v = r.choice(keys)
+                v = random.choice(keys)
                 keys.remove(v)
+
             prune_res = u.prune_and_reattach(v)
 
-        tree.operation = cls(cls.PRUNE_REGRAFT, node_name_1=u.name, node_name_2=v.name)
-
         return 0
+
 
 
     @classmethod

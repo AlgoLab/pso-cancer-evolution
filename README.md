@@ -71,7 +71,7 @@ Done!
 - `--iterations [INT]`: Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
-- `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 0.5].
+- `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 5].
 - `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 300].
