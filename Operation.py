@@ -2,8 +2,6 @@ from Node import Node
 import random
 import numpy
 
-def accept(currentIteration, iterations):
-    return random.random() < (currentIteration / iterations)
 
 class Operation(object):
 
@@ -13,28 +11,27 @@ class Operation(object):
     PRUNE_REGRAFT = 3
 
 
-
     @classmethod
     def tree_operation(cls, helper, tree, operation):
         if operation == cls.BACK_MUTATION:
-            return cls.add_back_mutation(helper, tree) # add a new backmutation
+            return cls.add_back_mutation(helper, tree)
 
         elif operation == cls.DELETE_MUTATION:
-            return cls.mutation_delete(helper, tree) # delete a random mutation
+            return cls.mutation_delete(helper, tree)
 
         elif operation == cls.SWITCH_NODES:
-            return cls.switch_nodes(helper, tree) # switch two random nodes
+            return cls.switch_nodes(helper, tree)
 
         elif operation == cls.PRUNE_REGRAFT:
-            return cls.prune_regraft(helper, tree) # prune-regraft two random nodes
+            return cls.prune_regraft(helper, tree)
 
         else:
             raise SystemError("Something has happened while choosing an operation")
 
 
-
     @classmethod
     def add_back_mutation(cls, helper, tree):
+        """Adds a new random backmutation to the given tree"""
 
         # gets a list of all the nodes from cache
         cached_nodes = tree.phylogeny.get_cached_content()
@@ -90,19 +87,19 @@ class Operation(object):
         return 0
 
 
-
     @classmethod
     def mutation_delete(cls, helper, tree):
+        """Delete a random mutation from the given tree"""
         if (len(tree.losses_list) == 0):
             return 1
-        node_delete = random.choice(tree.losses_list)
-        node_delete.delete_b(helper, tree)
+        node = random.choice(tree.losses_list)
+        node.delete_node(helper, tree)
         return 0
-
 
 
     @classmethod
     def switch_nodes(cls, helper, tree):
+        """Switch two random nodes of the given tree"""
         nodes = tree.phylogeny.get_cached_content()
 
         keys = list(nodes.keys())
@@ -121,9 +118,9 @@ class Operation(object):
         return 0
 
 
-
     @classmethod
     def prune_regraft(cls, helper, tree):
+        """Prune-regraft two random nodes of the given tree"""
         nodes_list = tree.phylogeny.get_cached_content()
 
         prune_res = -1
@@ -144,40 +141,3 @@ class Operation(object):
             prune_res = u.prune_and_reattach(v)
 
         return 0
-
-
-
-    @classmethod
-    def prob(cls, I, E, alpha, beta):
-
-        fp = 0 # false positives
-        fn = 0 # false negatives
-        tp = 0 # true positives
-        tn = 0 # true negatives
-        missing = 0 # missing values
-
-        p = 0
-        if I == 0:
-            if E == 0:
-                tn += 1
-                p = 1 - beta
-            elif E == 1:
-                fn += 1
-                p = alpha
-            else:
-                raise SystemError("Unknown value for E: %d" % E)
-        elif I == 1:
-            if E == 0:
-                fp += 1
-                p = beta
-            elif E == 1:
-                tp += 1
-                p = 1 - alpha
-            else:
-                raise SystemError("Unknown value for E: %d" % E)
-        elif I == 2:
-            missing += 1
-            p = 1
-        else:
-            raise SystemError("Unknown value for I: %d" % I)
-        return p, [fp, fn, tp, tn, missing]

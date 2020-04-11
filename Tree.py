@@ -6,7 +6,9 @@ import math
 # for a uniform random tree generation
 used_combinations = []
 
+
 class Tree(object):
+
 
     def __init__(self, cells, mutations):
         self.cells = cells
@@ -19,6 +21,7 @@ class Tree(object):
 
 
     def update_losses_list(self):
+        """Update the two losses lists of this tree"""
         ll = []
         kll = [0] * self.mutations
         for n in self.phylogeny.traverse():
@@ -30,7 +33,7 @@ class Tree(object):
 
 
     def copy(self):
-        "Copies everything in this tree"
+        """Copies everything in this tree"""
         t = Tree(self.cells, self.mutations)
         t.likelihood = self.likelihood
         t.phylogeny = self.phylogeny.copy()
@@ -41,19 +44,9 @@ class Tree(object):
         return t
 
 
-
     @classmethod
     def random(cls, cells, mutations, mutation_names):
-        t = Tree(cells, mutations)
-        random_tree = cls._generate_random_btree(mutations, mutation_names)
-        t.phylogeny = random_tree
-        return t
-
-
-
-    @classmethod
-    def _generate_random_btree(cls, mutations, mutation_names):
-        """ Generates a random binary tree """
+        """Generates a random binary tree"""
         root = Node("germline", None, -1, 0)
         rantree = cls._new_unique_tree(mutations)
 
@@ -69,8 +62,9 @@ class Tree(object):
             append_node += 1
             i += 1
 
-        return root
-
+        t = Tree(cells, mutations)
+        t.phylogeny = root
+        return t
 
 
     @classmethod
@@ -109,61 +103,9 @@ class Tree(object):
         return tree
 
 
-
-    @classmethod
-    def greedy_loglikelihood_with_data(cls, helper, tree, data):
-        "Gets maximum likelihood of a tree"
-
-        nodes_list = tree.phylogeny.get_cached_content()
-        node_genotypes = [
-            [0 for j in range(helper.mutation_number)]
-            for i in range(len(nodes_list))
-        ]
-        for i, n in enumerate(nodes_list):
-            n.get_genotype_profile(node_genotypes[i])
-
-        # per ogni nodo, viene creato un array con tutte le mutazioni presenti, che vengono ereditate dai figli
-        #   es. nodi nell'albero:       {c: {c},       b: {b},       d: {c, b},    a: {a},       germline: {c, a, b}}
-        #       mutazioni dei nodi:     [[0, 0, 1, 1], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 0, 0]]
-
-        maximum_likelihood = 0
-        final_values = [0]*5
-
-        for i in range(helper.cells):
-            best_sigma = -1
-            best_lh = float("-inf")
-            best_values = [0]*5
-
-            for n in range(len(nodes_list)):
-                lh = 0
-                values = [0]*5
-
-                for j in range(helper.mutation_number):
-                    p, tmp_values = Op.prob(helper.matrix[i][j], node_genotypes[n][j], helper.alpha, helper.beta)
-                    lh += math.log(p)
-                    values = [sum(x) for x in zip(values, tmp_values)]
-
-                if lh > best_lh:
-                    best_sigma = n
-                    best_lh = lh
-                    best_values = values
-
-            tree.best_sigma[i] = best_sigma
-            maximum_likelihood += best_lh
-            final_values = [sum(x) for x in zip(final_values, best_values)]
-
-        data.false_positives = final_values[0]
-        data.false_negatives = final_values[1]
-        data.true_positives = final_values[2]
-        data.true_negatives = final_values[3]
-        data.missing_values = final_values[4]
-
-        return maximum_likelihood
-
-
-
     @classmethod
     def greedy_loglikelihood(cls, helper, tree):
+        """Gets maximum likelihood of a tree"""
         nodes_list = tree.phylogeny.get_cached_content()
         node_genotypes = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes_list))]
         for i, n in enumerate(nodes_list):
@@ -211,3 +153,85 @@ class Tree(object):
             maximum_likelihood += best_lh
 
         return maximum_likelihood
+
+
+    @classmethod
+    def greedy_loglikelihood_with_data(cls, helper, tree, data):
+        """Gets maximum likelihood of a tree, updating additional info in data"""
+        nodes_list = tree.phylogeny.get_cached_content()
+        node_genotypes = [
+            [0 for j in range(helper.mutation_number)]
+            for i in range(len(nodes_list))
+        ]
+        for i, n in enumerate(nodes_list):
+            n.get_genotype_profile(node_genotypes[i])
+
+        maximum_likelihood = 0
+        final_values = [0]*5
+
+        for i in range(helper.cells):
+            best_sigma = -1
+            best_lh = float("-inf")
+            best_values = [0]*5
+
+            for n in range(len(nodes_list)):
+                lh = 0
+                values = [0]*5
+
+                for j in range(helper.mutation_number):
+                    p, tmp_values = Tree._prob(helper.matrix[i][j], node_genotypes[n][j], helper.alpha, helper.beta)
+                    lh += math.log(p)
+                    values = [sum(x) for x in zip(values, tmp_values)]
+
+                if lh > best_lh:
+                    best_sigma = n
+                    best_lh = lh
+                    best_values = values
+
+            tree.best_sigma[i] = best_sigma
+            maximum_likelihood += best_lh
+            final_values = [sum(x) for x in zip(final_values, best_values)]
+
+        data.false_positives = final_values[0]
+        data.false_negatives = final_values[1]
+        data.true_positives = final_values[2]
+        data.true_negatives = final_values[3]
+        data.missing_values = final_values[4]
+
+        return maximum_likelihood
+
+
+    @classmethod
+    def _prob(cls, I, E, alpha, beta):
+
+        fp = 0 # false positives
+        fn = 0 # false negatives
+        tp = 0 # true positives
+        tn = 0 # true negatives
+        missing = 0 # missing values
+
+        p = 0
+        if I == 0:
+            if E == 0:
+                tn += 1
+                p = 1 - beta
+            elif E == 1:
+                fn += 1
+                p = alpha
+            else:
+                raise SystemError("Unknown value for E: %d" % E)
+        elif I == 1:
+            if E == 0:
+                fp += 1
+                p = beta
+            elif E == 1:
+                tp += 1
+                p = 1 - alpha
+            else:
+                raise SystemError("Unknown value for E: %d" % E)
+        elif I == 2:
+            missing += 1
+            p = 1
+        else:
+            raise SystemError("Unknown value for I: %d" % I)
+        return p, [fp, fn, tp, tn, missing]

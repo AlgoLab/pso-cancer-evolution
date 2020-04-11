@@ -5,7 +5,9 @@ from Data import Data
 import multiprocessing as mp
 
 def setup_arguments(arguments):
+    """Check arguments for errors and returns them ready for execution"""
 
+    # get the arguments
     particles = int(arguments['--particles'])
     iterations = int(arguments['--iterations'])
     alpha = float(arguments['--alpha'])
@@ -18,8 +20,7 @@ def setup_arguments(arguments):
     else:
         multiple_runs = None
 
-
-    #checking for errors
+    # check for errors
     if particles < 0:
         raise Exception("ERROR! Particles < 0")
     if iterations < 0:
@@ -29,8 +30,7 @@ def setup_arguments(arguments):
     if max_deletions < 0:
         raise Exception("ERROR! maxdel < 0")
     if max_time < 30:
-        raise Exception("ERROR! minimum time limit is 30 seconds")
-
+        raise Exception("ERROR! Minimum time limit is 30 seconds")
 
     with open(arguments['--infile'], 'r') as f:
         matrix =  np.atleast_2d(np.loadtxt(io.StringIO(f.read()))) # assuring that we at least have 2D array to work with
@@ -38,20 +38,20 @@ def setup_arguments(arguments):
     cells = matrix.shape[0]
     matrix = matrix.tolist()
 
-    # default number of particles = number of cores of cpu
+    # default number of particles = number of CPU cores
     if particles == 0:
         particles = mp.cpu_count()
 
-    mutation_names = read_mutation_names(arguments['--mutfile'], mutation_number)
-    gamma = read_gamma(arguments['--gamma'], mutation_number)
+    mutation_names = _read_mutation_names(arguments['--mutfile'], mutation_number)
+    gamma = _read_gamma(arguments['--gamma'], mutation_number)
 
     return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time, multiple_runs
 
 
 
 # reading file with mutation names, if given in input
-# generating them otherwise
-def read_mutation_names(path, mutation_number):
+# generating them otherwise (1,2,...n)
+def _read_mutation_names(path, mutation_number):
     if path:
         with open(path, 'r') as f:
             mutation_names = [l.strip() for l in f.readlines()]
@@ -64,7 +64,7 @@ def read_mutation_names(path, mutation_number):
 
 
 # reading file with gamma values or float value, if given in input
-def read_gamma(path, mutation_number):
+def _read_gamma(path, mutation_number):
     gamma = path
     try:
         gamma = float(gamma)

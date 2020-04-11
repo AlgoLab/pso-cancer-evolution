@@ -5,7 +5,9 @@ import sys
 import os
 import numpy as np
 
+
 class Data(object):
+
 
     def __init__(self, nofparticles):
         self.pso_start = 0
@@ -30,11 +32,10 @@ class Data(object):
         self.accuracy = 0
 
 
-
     def average_iteration_time_per_particle(self):
         """
             For each particle, return the average time
-            that particle has taken to complete its step
+            that particle has taken to complete its iteration
         """
         avg = [0] * self.nofparticles
         for i in range(self.nofparticles):
@@ -42,8 +43,8 @@ class Data(object):
         return avg
 
 
-
-    def calculate_accuracy(self, helper):
+    def calculate_relative_data(self, helper):
+        """Calculates percentage of a part of the collected data"""
         Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
         tot = self.true_positives + self.true_negatives + self.false_negatives + self.false_positives + self.missing_values
         self.true_positives_relative = (100 * self.true_positives) / tot
@@ -54,9 +55,12 @@ class Data(object):
         self.accuracy = 100 - (self.false_positives_relative + self.false_negatives_relative)
 
 
-
     def summary(self, helper, dir):
-        self.calculate_accuracy(helper)
+        """
+            Creates a text file with the data of the execution, an image of the
+            best tree found, a plot of the likelihood over time
+        """
+        self.calculate_relative_data(helper)
 
         # tree image
         helper.best_particle.best.phylogeny.save(dir + "/best.gv")
@@ -97,9 +101,9 @@ class Data(object):
         f.close()
 
 
-
     @classmethod
     def runs_summary(cls, runs, runs_data, dir):
+        """Creates the summary for each run and a plot with particles - best lh"""
         likelihoods = []
         for data in runs_data:
             likelihoods.append(max(data.best_iteration_likelihoods))

@@ -4,6 +4,7 @@ from graphviz import Source
 import numpy as np
 import json
 
+
 class Node(Tree):
 
     def _get_uid(self):
@@ -27,32 +28,16 @@ class Node(Tree):
         return str(self.name) + ("-" if self.loss else "")
 
 
-
-    def delete_b(self, helper, tree):
+    def delete_node(self, helper, tree):
+        """Delete a node from the given tree"""
         if self in tree.losses_list:
             tree.losses_list.remove(self)
             tree.k_losses_list[self.mutation_id] -= 1
             self.delete(prevent_nondicotomic=False)
 
 
-    def find_node_by_uid(self, uid_):
-        return next(self.iter_search_nodes(uid=uid_), None)
-
-
-    def is_loss_valid(self, mutation_id=None):
-        """ Checks if current node mutation is valid up until the root node """
-        if mutation_id is None:
-            mutation_id = self.mutation_id
-        for par in self.iter_ancestors():
-            if (not par.loss) and par.mutation_id == mutation_id:
-                return True
-        return False
-
-
     def is_mutation_already_lost(self, mutation_id, k=3):
-        """
-            Checks if mutation is already lost in the current tree
-        """
+        """Checks if mutation is already lost in the current tree"""
         for par in self.iter_ancestors():
             if par.loss and par.mutation_id == mutation_id:
                 return True
@@ -61,7 +46,7 @@ class Node(Tree):
 
 
     def is_ancestor_of(self, node):
-        """ Checks if current node is parent of the given arguent node """
+        """Checks if current node is parent of the given node"""
         par = self.up
         while par != None:
             if par.uid == node.uid:
@@ -71,7 +56,7 @@ class Node(Tree):
 
 
     def prune_and_reattach(self, node_reattach):
-        """ Detaches current node (with all its descendants) and reattaches it into another node """
+        """Detaches current node (with all its descendants) and reattaches it into another node"""
         if node_reattach.is_ancestor_of(self):
             return 1
         if node_reattach.up.uid == self.uid:
@@ -80,49 +65,28 @@ class Node(Tree):
             return 1
         if self.uid == node_reattach.uid:
             return 1
-
         self.detach()
         node_reattach.add_child(self)
         return 0
 
 
-    def get_depth(self):
-        ancestors = [n for n in self.iter_ancestors()]
-        return len(ancestors)
-
-
     def get_height(self):
-        "Returns the tree height from the current node"
+        """Returns the tree height from the current node"""
         height = 0
         for child in self.children:
             height = max(height, child.get_height())
         return height + 1
 
 
-
     def swap(self, node):
-        """ Switch this data with with that of another node """
+        """Switch this data with with that of another node"""
         self.name, node.name = node.name, self.name
         self.mutation_id, node.mutation_id = node.mutation_id, self.mutation_id
         self.loss, node.loss = node.loss, self.loss
 
 
-
-
-    def _get_parent_at_height(self, height=1):
-        " Support function that returns the parent node at the desired height "
-        par = self.up
-        climb = 0
-        while (par is not None and climb < height):
-            climb += 1
-            par = par.up
-        return par
-
-
     def get_clades(self):
-        """
-        Clades are defined as every node in the tree, excluding the root
-        """
+        """Clades are defined as every node in the tree, excluding the root"""
         if self.mutation_id != -1:
             raise SystemError("Cannot get clades from a non-root node!")
         nodes_list = list(self.get_cached_content().keys())
@@ -131,67 +95,14 @@ class Node(Tree):
 
 
     def get_genotype_profile(self, genotypes):
-        " Walks up to the root and maps the genotype for the current node mutation "
+        """Walks up to the root and maps the genotype for the current node mutation"""
         if self.mutation_id == -1:
             return
         if not self.loss:
             genotypes[self.mutation_id] += 1
         else:
             genotypes[self.mutation_id] -= 1
-
         self.up.get_genotype_profile(genotypes)
-
-
-    def mutation_number(self, helper):
-        """
-            Suppose that we have the following tree:
-            T:
-                       /-c
-                    /d|
-            -germline  \-a
-                   |
-                    \-b
-
-            Our tree can be represented by the following matrix,
-            obtained by combining every mutation genotype:
-            M(T) =
-            a = 1 0 0 1
-            b = 0 1 0 0
-            c = 0 0 1 1
-            d = 0 0 0 1
-            And the sum of mutations is the sum of very 1 in the matrix:
-            a = 1 + 0 + 0 + 1 = 2
-            b = 0 + 1 + 0 + 0 = 1
-            c = 0 + 0 + 1 + 1 = 2
-            d = 0 + 0 + 0 + 1 = 1
-            a + b + c + d     = 6
-            And 6 is the sum of the number of mutations in the tree.
-
-            This method returns a list of tuples with two elements for each item:
-            mutations(T) = { (m, n) : m = mutation_number(n), n € T }
-        """
-
-        # sommo il numero di mutazioni acquisite per ogni nodo dell'albero
-        mutations = []
-        s = 0
-        for n in self.traverse():
-            n_genotype = [0] * helper.mutation_number
-            n.get_genotype_profile(n_genotype)
-            sum_ = 0
-            for m in n_genotype:
-                sum_ += m
-
-            mutations.append((sum_, n))
-            s += sum_
-        return mutations, s
-
-
-    def get_clades_max_nodes(self, max=1):
-        clades = []
-        for cl in self.get_clades():
-            if len(cl.get_cached_content()) <= max and not cl.loss:
-                clades.append(cl)
-        return clades
 
 
     def distance(self, tree, mutation_number):
@@ -221,7 +132,6 @@ class Node(Tree):
 
         total = len(genotypes1.values())
         dist = 1 - equal / total
-
         return dist
 
 
@@ -255,28 +165,8 @@ class Node(Tree):
                 return n
 
 
-    def back_mutation_ancestry(self):
-        """
-            Returns a list of nodes representing where a back mutation
-            happened. Mostly used to know where NOT to cut.
-        """
-        back_mutations = []
-        for p in self.iter_ancestors():
-            if p.loss:
-                back_mutations.append(p)
-        return back_mutations
-
-
-    def check_integrity(self):
-        for n in self.traverse():
-            for c in n.children:
-                assert(c.up == n)
-
-
-
     def attach_clade(self, helper, tree, clade):
-        "Remove every node already in clade"
-
+        """Remove every node already in clade"""
         nodes_list = self.get_tree_root().get_cached_content()
         clade_to_be_attached = clade.get_cached_content()
         clade_destination = self
@@ -305,77 +195,36 @@ class Node(Tree):
         clade_destination.add_child(clade)
 
 
-
     def losses_fix(self, helper, tree):
+        """Fixes errors with losses in the given tree"""
         tree.update_losses_list()
         if tree.losses_list != []:
             families = []
             for n in self.traverse():
                 if n.loss:
 
-                    # elimina loss se ce ne sono troppe di un tipo
+                    # delete loss if there are more than k of the same mutation
                     if tree.k_losses_list[n.mutation_id] > helper.k or len(tree.losses_list) > helper.max_deletions:
-                        n.delete_b(helper, tree)
+                        n.delete_node(helper, tree)
 
-                    # elimina loss se non valida
+                    # delete loss if not valid
                     else:
                         genotypes = [0]*helper.mutation_number
                         n.get_genotype_profile(genotypes)
                         if min(genotypes) < 0:
-                            n.delete_b(helper, tree)
+                            n.delete_node(helper, tree)
 
-                        # elimina loss se duplicata
+                        # delete loss if duplicate
                         else:
                             family = [n.mutation_id, n.up]
                             if (family in families and n.children == []):
-                                n.delete_b(helper, tree)
+                                n.delete_node(helper, tree)
                             else:
                                 families.append(family)
 
 
-
-    @classmethod
-    def common_clades_mutation(cls, helper, clade1, clade2):
-        """
-            This function can be seen as the logic and between
-            two binary strings, and then the sum between every element.
-            Suppose we have the following trees:
-            T1:
-                       /-c
-                    /d|
-            -germline  \-a
-                   |
-                    \-b
-            T2:
-                       /-d
-                    /c|
-            -germline  \-b
-                   |
-                    \-a
-
-            And suppose we are comparing the clades c1 and b2.
-            genotype(c1) = [0 0 1 1]
-            genotype(b2) = [0 1 1 0]
-            logic_and = [0 0 1 1] & [0 1 1 0] = [0 0 1 0]
-            sum = 0 + 0 + 1 + 0 = 1
-        """
-
-        clade1_genotype = [0] * helper.mutation_number
-        clade2_genotype = [0] * helper.mutation_number
-        common = 0
-
-        # ignoring back mutations
-        clade1.get_genotype_profile(clade1_genotype)
-        clade2.get_genotype_profile(clade2_genotype)
-
-        for m in range(helper.mutation_number):
-            if clade1_genotype[m] == clade2_genotype[m] == 1:
-                common += 1
-        return common
-
     def _to_dot_label(self, d={}):
         """
-
         Returns a string representing the list of properties
         indicated by d.
         Ex.: d = {
@@ -399,11 +248,13 @@ class Node(Tree):
         out += ']'
         return out
 
+
     def _to_dot_node(self, nodeFromId, nodeToId=None, props={}):
         if nodeToId:
             return '\n\t"%s" -- "%s" %s;' % (nodeFromId, nodeToId, self._to_dot_label(props))
         else: # printing out single node
             return '\n\t"%s" %s;' % (nodeFromId, self._to_dot_label(props))
+
 
     def to_dot(self, root=False):
         out = ''
@@ -427,6 +278,7 @@ class Node(Tree):
             out += '\n}\n'
         return out
 
+
     def _to_json_children(self):
         """
             Support function for printing the json tree
@@ -435,6 +287,7 @@ class Node(Tree):
         for n in self.children:
             node["children"].append(n._to_json_children())
         return node
+
 
     def to_json(self):
         """
@@ -445,8 +298,10 @@ class Node(Tree):
             node["children"].append(n._to_json_children())
         return json.dumps(node, indent=4)
 
+
     def to_string(self):
         return "[uid: %s; dist: %d]" % (str(self.uid), self.get_distance(self.get_tree_root()))
+
 
     def _to_tikz_node(self):
         out = ''
@@ -457,35 +312,15 @@ class Node(Tree):
             back_mutation = ',color=red'
         return '\n\t[{%s}%s %s]' % (self.name, back_mutation, out)
 
+
     def to_tikz(self):
         nodes = self.get_cached_content()
-        # refer to official "forest" package documentation for forked edges
-        # changed it a bit:
-        # \forestset{
-        # 	declare dimen={fork sep}{0.5em},
-        # 	forked edge'/.style={
-        # 		edge={rotate/.option=!parent.grow},
-        # 		edge path'={(!u.parent anchor) -- ++(\forestoption{fork sep},0) |- (.child anchor)},
-        # 	},
-        # 	forked edge/.style={
-        # 		on invalid={fake}{!parent.parent anchor=children},
-        # 		child anchor=parent,
-        # 		forked edge',
-        # 	},
-        # 	forked edges/.style={for nodewalk={#1}{forked edge}},
-        # 	forked edges/.default=tree,
-        # 	aligned terminal/.style={if n children=0{
-        # 		tier=terminal
-        # 	}{}},
-        # 	germline/.style={
-        # 		for tree = {grow'=0,draw,aligned terminal}, forked edges
-        # 	}
-        # }
         out = '\\begin{forest}\n\tgermline'
         out += '\n\t[{%s} ' % self.name
         for c in self.get_children():
             out += c._to_tikz_node()
         return out + ']\n\\end{forest}'
+
 
     def save(self, filename="test.gv", fileformat="dot"):
         if fileformat == "dot":

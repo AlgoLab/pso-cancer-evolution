@@ -9,17 +9,17 @@ import sys
 import time
 import random
 
+
 class Particle(object):
+
 
     def __init__(self, cells, mutation_number, mutation_names, number):
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
         self.number = number
         self.best = self.current_tree # best tree found by this particle
-
         self.max_stall_iterations = 200
         self.tolerance = 0.002
         self.best_iteration_likelihoods = []
-
 
 
     def particle_start(self, iterations, helper, ns, lock):
@@ -29,13 +29,12 @@ class Particle(object):
         self.proc.start()
 
 
-
     def particle_join(self):
         self.proc.join()
 
 
-
     def run_iterations(self, iterations, helper, ns, lock):
+        """execute the iterations and stops after the chosen criteria"""
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
         improvements = deque([1] * self.max_stall_iterations) # queue
@@ -82,8 +81,8 @@ class Particle(object):
             ns.best_iteration_likelihoods = self.best_iteration_likelihoods
 
 
-
     def particle_iteration(self, it, helper, best_swarm, ns, lock, ops):
+        """The particle makes 3 movements and update the results"""
         start_it = time.time()
         tree_copy = self.current_tree.copy()
 

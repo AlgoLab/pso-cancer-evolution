@@ -11,14 +11,15 @@ Options:
     -v --version                            Shows version.
     -i infile --infile infile               Matrix input file.
     -m mutfile --mutfile mutfile            Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-    -p particles --particles particles      Number of particles to use for PSO. If not used or zero, it will be estimated based on the number of particles and cells [default: 0]
-    -t iterations --iterations iterations   Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after <maxtime> of total execution) [default: 0].
+    -p particles --particles particles      Number of particles to use for PSO. If not used or zero, it will be number of CPU cores [default: 0]
+    -t iterations | --iterations iterations   Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
     --alpha=<alpha>                         False negative rate [default: 0.15].
     --beta=<beta>                           False positive rate [default: 0.00001].
     --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
     --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
     --maxdel=<max_deletions>                Maximum number of total deletions allowed [default: 5].
     --maxtime=<maxtime>                     Maximum time (in seconds) of total PSOSC execution [default: 300].
+
 """
 
 import Setup
@@ -49,11 +50,10 @@ def main(argv):
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
 
     if multiple_runs is None:
-        run_dir = base_dir + "/particles%d_run%d" % (particles, iterations)
-        if not os.path.exists(run_dir):
-            os.makedirs(run_dir)
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
         data, helper = pso(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time)
-        data.summary(helper, run_dir)
+        data.summary(helper, base_dir)
     else:
         runs_data = []
         for r, ptcl in enumerate(multiple_runs):
@@ -65,7 +65,6 @@ def main(argv):
             data.summary(helper, run_dir)
             runs_data.append(data)
         Data.runs_summary(multiple_runs, runs_data, base_dir)
-
 
 
 def pso(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time):
@@ -88,8 +87,8 @@ def pso(nparticles, iterations, matrix, mutation_number, mutation_names, cells, 
     return data, helper
 
 
-
 def pso_initialization(nparticles):
+    """Creates the particles"""
     global helper
     global data
     data.initialization_start = time.time()
@@ -106,8 +105,8 @@ def pso_initialization(nparticles):
     return particles
 
 
-
 def pso_execution(particles, iterations):
+    """Runs the particles simultaneously"""
     global helper
     global data
     data.pso_start = time.time()
@@ -124,7 +123,7 @@ def pso_execution(particles, iterations):
     ns.stop = False
     ns.automatic_stop = iterations == 0
 
-    # starting particle processes
+    # run particle processes
     for p in particles:
         p.particle_start(iterations, helper, ns, lock)
     for p in particles:
@@ -136,7 +135,6 @@ def pso_execution(particles, iterations):
     helper.best_particle.best = ns.best_swarm.copy()
 
     data.pso_end = time.time()
-
 
 
 if __name__ == "__main__":
