@@ -5,7 +5,6 @@ source ./env/bin/activate
 
 
 DONE:
-- added usage of w, c1, c2
 - added uniform random trees generation
 - added losses at the end of execution
 - fixed wrong k and added max deletions

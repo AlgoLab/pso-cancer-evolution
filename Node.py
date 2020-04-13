@@ -4,6 +4,7 @@ from graphviz import Source
 import numpy as np
 import json
 
+import time
 
 class Node(Tree):
 
@@ -112,6 +113,9 @@ class Node(Tree):
             totally different. It is obtained comparing the genotype profiles
             of the two trees.
         """
+        if self == tree:
+            return 0
+
         genotypes1 = {}
         for n in self.traverse():
             if not n.loss:
@@ -143,7 +147,8 @@ class Node(Tree):
             in the past clade attachments: based on that, it chooses
             the height of the clade, and randomly, it chooses which clade.
         """
-        max_h = self.get_height()
+
+        nodes = self.get_clades()
 
         if random.random() < 0.5:
             # calculating and re-scaling difference from [-1,1] to [0,1]
@@ -153,16 +158,17 @@ class Node(Tree):
             elif diff < -1:
                 diff = -1
             diff = (diff+1)/2
+
+            max_h = self.get_height()
             level = int(diff * (max_h - 2)) + 1
 
-        else:
-            level = random.choice([x for x in range(1, max_h)])
+            random.shuffle(nodes)
+            for n in nodes:
+                if n.get_height() == level:
+                    return n
 
-        nodes = list(self.get_cached_content().keys())
-        random.shuffle(nodes)
-        for n in nodes:
-            if n.get_height() == level:
-                return n
+        else:
+            return random.choice(nodes)
 
 
     def attach_clade(self, helper, tree, clade):

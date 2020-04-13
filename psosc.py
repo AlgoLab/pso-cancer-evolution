@@ -7,18 +7,18 @@ Usage:
     psosc.py -v | --version
 
 Options:
-    -h --help                               Shows this screen.
-    -v --version                            Shows version.
-    -i infile --infile infile               Matrix input file.
-    -m mutfile --mutfile mutfile            Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-    -p particles --particles particles      Number of particles to use for PSO. If not used or zero, it will be number of CPU cores [default: 0]
-    -t iterations | --iterations iterations   Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
-    --alpha=<alpha>                         False negative rate [default: 0.15].
-    --beta=<beta>                           False positive rate [default: 0.00001].
-    --gamma=<gamma>                         Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
-    --k=<k>                                 K value of Dollo(k) model used as phylogeny tree [default: 3].
-    --maxdel=<max_deletions>                Maximum number of total deletions allowed [default: 5].
-    --maxtime=<maxtime>                     Maximum time (in seconds) of total PSOSC execution [default: 300].
+    -h --help                                   Shows this screen.
+    -v --version                                Shows version.
+    -i infile | --infile infile                 Matrix input file.
+    -m mutfile | --mutfile mutfile              Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
+    -p particles | --particles particles        Number of particles to use for PSO. If not used or zero, it will be number of CPU cores [default: 0]
+    -t iterations | --iterations iterations     Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
+    --alpha=<alpha>                             False negative rate [default: 0.15].
+    --beta=<beta>                               False positive rate [default: 0.00001].
+    --gamma=<gamma>                             Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
+    --k=<k>                                     K value of Dollo(k) model used as phylogeny tree [default: 3].
+    --maxdel=<max_deletions>                    Maximum number of total deletions allowed [default: 5].
+    --maxtime=<maxtime>                         Maximum time (in seconds) of total PSOSC execution [default: 300].
 
 """
 
@@ -122,6 +122,7 @@ def pso_execution(particles, iterations):
     ns.particle_iteration_times = data.particle_iteration_times
     ns.stop = False
     ns.automatic_stop = iterations == 0
+    ns.operations = [2,3]
 
     # run particle processes
     for p in particles:

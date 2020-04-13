@@ -20,7 +20,7 @@ The possible operations are:
   - swap two random nodes (2)
   - prune-regraft two random nodes (3)
 
-In the first part we use just 2/3 operations, in the second part just 0/1 operations.
+In the first part we use just 2/3 operations, in the second part just 0/1 operations.\
 We switch from the first to the second part when:
   - 3/4 of maxtime execution
   - 3/4 of total iterations (if iterations given in input)
@@ -84,5 +84,5 @@ Done!
 
 
 ## Info
-Author: Leonardo Riva - Università degli studi Milano Bicocca
+Author: Leonardo Riva - Università degli studi Milano Bicocca\
 Project based on: https://github.com/IAL32/pso-cancer-evolution

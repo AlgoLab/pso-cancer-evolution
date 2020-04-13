@@ -34,15 +34,14 @@ class Particle(object):
 
 
     def run_iterations(self, iterations, helper, ns, lock):
-        """execute the iterations and stops after the chosen criteria"""
+        """execute the iterations and stops after reaching a stopping criteria"""
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
         improvements = deque([1] * self.max_stall_iterations) # queue
         bm = False
-        ops = [2,3]
 
         for it in range(iterations):
-            self.particle_iteration(it, helper, ns.best_swarm, ns, lock, ops)
+            self.particle_iteration(it, helper, ns.best_swarm, ns, lock)
 
             if self.number == 0:
 
@@ -67,7 +66,7 @@ class Particle(object):
                     if b1 or b2 or b3:
                         improvements = deque([1] * self.max_stall_iterations)
                         bm = True
-                        ops = [0,1]
+                        ns.operations = [0,1,2,3]
 
                 self.best_iteration_likelihoods.append(lh)
 
@@ -81,48 +80,46 @@ class Particle(object):
             ns.best_iteration_likelihoods = self.best_iteration_likelihoods
 
 
-    def particle_iteration(self, it, helper, best_swarm, ns, lock, ops):
+    def particle_iteration(self, it, helper, best_swarm, ns, lock):
         """The particle makes 3 movements and update the results"""
         start_it = time.time()
-        tree_copy = self.current_tree.copy()
 
         # movement to particle best
-        particle_distance = tree_copy.phylogeny.distance(self.best.phylogeny, helper.mutation_number)
+        particle_distance = self.current_tree.phylogeny.distance(self.best.phylogeny, helper.mutation_number)
         if particle_distance != 0:
             clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper, particle_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
-            clade_destination = random.choice(tree_copy.phylogeny.get_clades())
-            clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
-            tree_copy.phylogeny.losses_fix(helper, tree_copy)
+            clade_destination = random.choice(self.current_tree.phylogeny.get_clades())
+            clade_destination.attach_clade(helper, self.current_tree, clade_to_be_attached)
+            self.current_tree.phylogeny.losses_fix(helper, self.current_tree)
 
         # movement to swarm best
-        swarm_distance = tree_copy.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
+        swarm_distance = self.current_tree.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
         if swarm_distance != 0:
             clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper, swarm_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
-            clade_destination = random.choice(tree_copy.phylogeny.get_clades())
-            clade_destination.attach_clade(helper, tree_copy, clade_to_be_attached)
-            tree_copy.phylogeny.losses_fix(helper, tree_copy)
+            clade_destination = random.choice(self.current_tree.phylogeny.get_clades())
+            clade_destination.attach_clade(helper, self.current_tree, clade_to_be_attached)
+            self.current_tree.phylogeny.losses_fix(helper, self.current_tree)
 
         # self movement
-        op = random.choice(ops)
-        Op.tree_operation(helper, tree_copy, op)
-        tree_copy.phylogeny.losses_fix(helper, tree_copy)
+        op = random.choice(ns.operations)
+        Op.tree_operation(helper, self.current_tree, op)
+        self.current_tree.phylogeny.losses_fix(helper, self.current_tree)
 
         # updating log likelihood and bests
-        lh = Tree.greedy_loglikelihood(helper, tree_copy)
-        tree_copy.likelihood = lh
-        self.current_tree = tree_copy
+        lh = Tree.greedy_loglikelihood(helper, self.current_tree)
+        self.current_tree.likelihood = lh
 
         # update particle best
         if lh > self.best.likelihood:
-            self.best = tree_copy
+            self.best = self.current_tree
 
         lock.acquire()
 
         # update swarm best
         if lh > ns.best_swarm.likelihood:
-            ns.best_swarm = tree_copy
+            ns.best_swarm = self.current_tree
 
         # update average distance
         tmp = (particle_distance + swarm_distance) / 2
