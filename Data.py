@@ -45,7 +45,7 @@ class Data(object):
 
     def calculate_relative_data(self, helper):
         """Calculates percentage of a part of the collected data"""
-        Tree.greedy_loglikelihood_with_data(helper, helper.best_particle.best, self)
+        Tree.greedy_loglikelihood_with_data(helper.best_particle.best, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta, self)
         tot = self.true_positives + self.true_negatives + self.false_negatives + self.false_positives + self.missing_values
         self.true_positives_relative = (100 * self.true_positives) / tot
         self.true_negatives_relative = (100 * self.true_negatives) / tot
@@ -62,10 +62,10 @@ class Data(object):
         """
         self.calculate_relative_data(helper)
 
-        # tree image
+        # tree [image]
         helper.best_particle.best.phylogeny.save(dir + "/best.gv")
 
-        # likelihood plot pdf
+        # likelihood plot [pdf]
         plt.title("Likelihood over Time")
         plt.xlabel("Iteration number")
         plt.ylabel("Log Likelihood")
@@ -74,7 +74,7 @@ class Data(object):
         plt.savefig(dir + "/lh.pdf")
         plt.clf()
 
-        # text file with info
+        #  execution info [text file]
         f = open(dir + "/results.txt", "w+")
         f.write(">> Number of particles: %d\n" % self.nofparticles)
         f.write(">> Number of iterations for each particle:\n")
@@ -96,14 +96,14 @@ class Data(object):
         f.write(">> Average iteration time per particle:\n")
         for i,t in enumerate(self.average_iteration_time_per_particle()):
             f.write("\t- particle %d: %s\n" % (i, str(round(t, 4))))
-        f.write("\nBest Tree in Tikz format:\n")
+        f.write("\n\nBest Tree in Tikz format:\n")
         f.write(helper.best_particle.best.phylogeny.to_tikz())
         f.close()
 
 
     @classmethod
     def runs_summary(cls, runs, runs_data, dir):
-        """Creates the summary for each run and a plot with particles - best lh"""
+        """Creates the summary for each run and a plot (particles / best lh)"""
         likelihoods = []
         for data in runs_data:
             likelihoods.append(max(data.best_iteration_likelihoods))

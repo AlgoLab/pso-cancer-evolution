@@ -104,30 +104,30 @@ class Tree(object):
 
 
     @classmethod
-    def greedy_loglikelihood(cls, helper, tree):
+    def greedy_loglikelihood(cls, tree, matrix, cells, mutation_number, alpha, beta):
         """Gets maximum likelihood of a tree"""
         nodes_list = tree.phylogeny.get_cached_content()
-        node_genotypes = [[0 for j in range(helper.mutation_number)] for i in range(len(nodes_list))]
+        node_genotypes = [[0 for j in range(mutation_number)] for i in range(len(nodes_list))]
         for i, n in enumerate(nodes_list):
             n.get_genotype_profile(node_genotypes[i])
 
-        lh_00 = math.log(1-helper.beta)
-        lh_10 = math.log(helper.beta)
-        lh_01 = math.log(helper.alpha)
-        lh_11 = math.log(1-helper.alpha)
+        lh_00 = math.log(1-beta)
+        lh_10 = math.log(beta)
+        lh_01 = math.log(alpha)
+        lh_11 = math.log(1-alpha)
 
         maximum_likelihood = 0
 
-        for i in range(helper.cells):
+        for i in range(cells):
             best_sigma = -1
             best_lh = float("-inf")
 
             for n in range(len(nodes_list)):
                 lh = 0
 
-                for j in range(helper.mutation_number):
+                for j in range(mutation_number):
 
-                    I = helper.matrix[i][j]
+                    I = matrix[i][j]
                     E = node_genotypes[n][j]
 
                     if I == 0 and E == 0:
@@ -156,11 +156,11 @@ class Tree(object):
 
 
     @classmethod
-    def greedy_loglikelihood_with_data(cls, helper, tree, data):
+    def greedy_loglikelihood_with_data(cls, tree, matrix, cells, mutation_number, alpha, beta, data):
         """Gets maximum likelihood of a tree, updating additional info in data"""
         nodes_list = tree.phylogeny.get_cached_content()
         node_genotypes = [
-            [0 for j in range(helper.mutation_number)]
+            [0 for j in range(mutation_number)]
             for i in range(len(nodes_list))
         ]
         for i, n in enumerate(nodes_list):
@@ -169,7 +169,7 @@ class Tree(object):
         maximum_likelihood = 0
         final_values = [0]*5
 
-        for i in range(helper.cells):
+        for i in range(cells):
             best_sigma = -1
             best_lh = float("-inf")
             best_values = [0]*5
@@ -178,8 +178,8 @@ class Tree(object):
                 lh = 0
                 values = [0]*5
 
-                for j in range(helper.mutation_number):
-                    p, tmp_values = Tree._prob(helper.matrix[i][j], node_genotypes[n][j], helper.alpha, helper.beta)
+                for j in range(mutation_number):
+                    p, tmp_values = Tree._prob(matrix[i][j], node_genotypes[n][j], alpha, beta)
                     lh += math.log(p)
                     values = [sum(x) for x in zip(values, tmp_values)]
 

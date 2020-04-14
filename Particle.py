@@ -18,7 +18,6 @@ class Particle(object):
         self.number = number
         self.best = self.current_tree # best tree found by this particle
         self.max_stall_iterations = 200
-        self.tolerance = 0.002
         self.best_iteration_likelihoods = []
 
 
@@ -61,7 +60,7 @@ class Particle(object):
                     b2 = not(ns.automatic_stop) and it >= (3/4)*iterations
 
                     # if iterations not given in input and stuck on fitness value
-                    b3 = ns.automatic_stop and sum(improvements) < self.tolerance
+                    b3 = ns.automatic_stop and sum(improvements) < helper.tolerance
 
                     if b1 or b2 or b3:
                         improvements = deque([1] * self.max_stall_iterations)
@@ -70,7 +69,7 @@ class Particle(object):
 
                 self.best_iteration_likelihoods.append(lh)
 
-                if ns.automatic_stop and (sum(improvements) < self.tolerance or (time.time() - start_time) >= (helper.max_time)):
+                if ns.automatic_stop and (sum(improvements) < helper.tolerance or (time.time() - start_time) >= (helper.max_time)):
                     ns.stop = True
 
             if ns.automatic_stop and ns.stop:
@@ -87,28 +86,28 @@ class Particle(object):
         # movement to particle best
         particle_distance = self.current_tree.phylogeny.distance(self.best.phylogeny, helper.mutation_number)
         if particle_distance != 0:
-            clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper, particle_distance)
+            clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper.avg_dist, particle_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
             clade_destination = random.choice(self.current_tree.phylogeny.get_clades())
-            clade_destination.attach_clade(helper, self.current_tree, clade_to_be_attached)
-            self.current_tree.phylogeny.losses_fix(helper, self.current_tree)
+            clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
+            self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # movement to swarm best
         swarm_distance = self.current_tree.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
         if swarm_distance != 0:
-            clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper, swarm_distance)
+            clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper.avg_dist, swarm_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
             clade_destination = random.choice(self.current_tree.phylogeny.get_clades())
-            clade_destination.attach_clade(helper, self.current_tree, clade_to_be_attached)
-            self.current_tree.phylogeny.losses_fix(helper, self.current_tree)
+            clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
+            self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # self movement
         op = random.choice(ns.operations)
-        Op.tree_operation(helper, self.current_tree, op)
-        self.current_tree.phylogeny.losses_fix(helper, self.current_tree)
+        Op.tree_operation(self.current_tree, op, helper.k, helper.gamma, helper.max_deletions)
+        self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # updating log likelihood and bests
-        lh = Tree.greedy_loglikelihood(helper, self.current_tree)
+        lh = Tree.greedy_loglikelihood(self.current_tree, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
         self.current_tree.likelihood = lh
 
         # update particle best

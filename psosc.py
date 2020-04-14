@@ -2,7 +2,7 @@
 Particle Swarm Optimization Single Cell inference
 
 Usage:
-    psosc.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--maxtime=<maxtime>] [--multiple <runptcl>...]
+    psosc.py (--infile <infile>) [--particles <particles>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--tolerance=<tolerance>] [--maxtime=<maxtime>] [--multiple <runptcl>...]
     psosc.py -h | --help
     psosc.py -v | --version
 
@@ -18,6 +18,7 @@ Options:
     --gamma=<gamma>                             Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
     --k=<k>                                     K value of Dollo(k) model used as phylogeny tree [default: 3].
     --maxdel=<max_deletions>                    Maximum number of total deletions allowed [default: 5].
+    --tolerance=<tolerance>                     Minimum relative improvement (between 0 and 1) in the last 200 iterations in order to keep going [default: 0.005].
     --maxtime=<maxtime>                         Maximum time (in seconds) of total PSOSC execution [default: 300].
 
 """
@@ -45,14 +46,14 @@ data = None
 def main(argv):
     arguments = docopt(__doc__, version = "PSOSC-Cancer-Evolution 2.0")
     (particles, iterations, matrix, mutation_number, mutation_names, cells,
-        alpha, beta, gamma, k, max_deletions, max_time, multiple_runs) = Setup.setup_arguments(arguments)
+        alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs) = Setup.setup_arguments(arguments)
 
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
 
     if multiple_runs is None:
         if not os.path.exists(base_dir):
             os.makedirs(base_dir)
-        data, helper = pso(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time)
+        data, helper = pso(particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
         data.summary(helper, base_dir)
     else:
         runs_data = []
@@ -61,16 +62,16 @@ def main(argv):
             run_dir = base_dir + "/particles%d_run%d" % (ptcl, r)
             if not os.path.exists(run_dir):
                 os.makedirs(run_dir)
-            data, helper = pso(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time)
+            data, helper = pso(ptcl, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
             data.summary(helper, run_dir)
             runs_data.append(data)
         Data.runs_summary(multiple_runs, runs_data, base_dir)
 
 
-def pso(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time):
+def pso(nparticles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time):
     global helper
     global data
-    helper = Helper(matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time)
+    helper = Helper(matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
     data = Data(nparticles)
 
     print("\n • PARTICLES START-UP")
@@ -96,7 +97,7 @@ def pso_initialization(nparticles):
     particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n) for n in range(nparticles)]
     helper.best_particle = particles[0]
     for p in particles:
-        p.current_tree.likelihood = Tree.greedy_loglikelihood(helper, p.current_tree)
+        p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
         if (p.current_tree.likelihood > helper.best_particle.best.likelihood):
             helper.best_particle = p
     data.starting_likelihood = helper.best_particle.best.likelihood

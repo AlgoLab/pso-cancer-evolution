@@ -14,6 +14,7 @@ def setup_arguments(arguments):
     beta = float(arguments['--beta'])
     k = int(arguments['--k'])
     max_deletions = int(arguments['--maxdel'])
+    tolerance = float(arguments['--tolerance'])
     max_time = int(arguments['--maxtime'])
     if arguments['<runptcl>'] != []:
         multiple_runs = [int(i) for i in arguments['<runptcl>']]
@@ -22,15 +23,17 @@ def setup_arguments(arguments):
 
     # check for errors
     if particles < 0:
-        raise Exception("ERROR! Particles < 0")
+        raise Exception("Error! Particles < 0")
     if iterations < 0:
-        raise Exception("ERROR! Iterations < 0")
+        raise Exception("Error! Iterations < 0")
     if k < 0:
-        raise Exception("ERROR! k < 0")
+        raise Exception("Error! K < 0")
     if max_deletions < 0:
-        raise Exception("ERROR! maxdel < 0")
+        raise Exception("Error! Maxdel < 0")
+    if tolerance < 0 or tolerance > 1:
+        raise Exception("Error! Tolerance is not between 0 and 1")
     if max_time < 30:
-        raise Exception("ERROR! Minimum time limit is 30 seconds")
+        raise Exception("Error! Minimum time limit is 30 seconds")
 
     with open(arguments['--infile'], 'r') as f:
         matrix =  np.atleast_2d(np.loadtxt(io.StringIO(f.read()))) # assuring that we at least have 2D array to work with
@@ -45,7 +48,7 @@ def setup_arguments(arguments):
     mutation_names = _read_mutation_names(arguments['--mutfile'], mutation_number)
     gamma = _read_gamma(arguments['--gamma'], mutation_number)
 
-    return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, max_time, multiple_runs
+    return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs
 
 
 

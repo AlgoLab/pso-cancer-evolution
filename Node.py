@@ -29,7 +29,7 @@ class Node(Tree):
         return str(self.name) + ("-" if self.loss else "")
 
 
-    def delete_node(self, helper, tree):
+    def delete_node(self, tree):
         """Delete a node from the given tree"""
         if self in tree.losses_list:
             tree.losses_list.remove(self)
@@ -37,12 +37,11 @@ class Node(Tree):
             self.delete(prevent_nondicotomic=False)
 
 
-    def is_mutation_already_lost(self, mutation_id, k=3):
+    def is_mutation_already_lost(self, mutation_id):
         """Checks if mutation is already lost in the current tree"""
         for par in self.iter_ancestors():
             if par.loss and par.mutation_id == mutation_id:
                 return True
-
         return False
 
 
@@ -139,7 +138,7 @@ class Node(Tree):
         return dist
 
 
-    def get_clade_by_distance(self, helper, distance):
+    def get_clade_by_distance(self, avg_dist, distance):
         """
             Choose a clade, from this tree, that will be attached in another
             tree. It's chosen either randomly or after calculating the
@@ -152,7 +151,7 @@ class Node(Tree):
 
         if random.random() < 0.5:
             # calculating and re-scaling difference from [-1,1] to [0,1]
-            diff = 10 * (distance - helper.avg_dist)
+            diff = 10 * (distance - avg_dist)
             if diff > 1:
                 diff = 1
             elif diff < -1:
@@ -171,7 +170,7 @@ class Node(Tree):
             return random.choice(nodes)
 
 
-    def attach_clade(self, helper, tree, clade):
+    def attach_clade(self, tree, clade):
         """Remove every node already in clade"""
         nodes_list = self.get_tree_root().get_cached_content()
         clade_to_be_attached = clade.get_cached_content()
@@ -201,7 +200,7 @@ class Node(Tree):
         clade_destination.add_child(clade)
 
 
-    def losses_fix(self, helper, tree):
+    def losses_fix(self, tree, mutation_number, k, max_deletions):
         """Fixes errors with losses in the given tree"""
         tree.update_losses_list()
         if tree.losses_list != []:
@@ -210,21 +209,21 @@ class Node(Tree):
                 if n.loss:
 
                     # delete loss if there are more than k of the same mutation
-                    if tree.k_losses_list[n.mutation_id] > helper.k or len(tree.losses_list) > helper.max_deletions:
-                        n.delete_node(helper, tree)
+                    if tree.k_losses_list[n.mutation_id] > k or len(tree.losses_list) > max_deletions:
+                        n.delete_node(tree)
 
                     # delete loss if not valid
                     else:
-                        genotypes = [0]*helper.mutation_number
+                        genotypes = [0]*mutation_number
                         n.get_genotype_profile(genotypes)
                         if min(genotypes) < 0:
-                            n.delete_node(helper, tree)
+                            n.delete_node(tree)
 
                         # delete loss if duplicate
                         else:
                             family = [n.mutation_id, n.up]
                             if (family in families and n.children == []):
-                                n.delete_node(helper, tree)
+                                n.delete_node(tree)
                             else:
                                 families.append(family)
 
