@@ -46,7 +46,7 @@ class Particle(object):
 
                 lh = ns.best_swarm.likelihood
                 improvements.popleft()
-                improvements.append(1-lh/old_lh)
+                improvements.append(1 - lh / old_lh)
                 old_lh = lh
 
                 if it % 20 == 0:
