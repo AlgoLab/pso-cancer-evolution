@@ -98,6 +98,7 @@ def pso_initialization(nparticles):
     helper.best_particle = particles[0]
     for p in particles:
         p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
+        p.best.likelihood = p.current_tree.likelihood
         if (p.current_tree.likelihood > helper.best_particle.best.likelihood):
             helper.best_particle = p
     data.starting_likelihood = helper.best_particle.best.likelihood

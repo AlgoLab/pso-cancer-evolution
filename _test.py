@@ -1,17 +1,29 @@
 
-from Node import Node
+import numpy
 
-n1 = Node("uno", None, 1, False)
-n2 = Node("due", None, 2, False)
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print(numpy.random.uniform())
+print("---")
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
+print(numpy.random.normal())
 
-print("n1: " + str(n1))
-print("n2: " + str(n2))
 
-n1,n2=n2,n1
-
-print("")
-print("n1: " + str(n1.mutation_id) + ", " + str(n1))
-print("n2: " + str(n2.mutation_id) + ", " + str(n2))
 
 
 # import math

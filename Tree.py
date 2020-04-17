@@ -1,6 +1,6 @@
 from Node import Node
 from Operation import Operation as Op
-import random
+import numpy
 import math
 
 # for a uniform random tree generation
@@ -81,7 +81,7 @@ class Tree(object):
 
         while not valid:
             tree = mutations.copy()
-            random.shuffle(tree, random.random)
+            numpy.random.shuffle(tree)
 
             temp_list = []
 

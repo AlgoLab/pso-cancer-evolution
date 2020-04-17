@@ -2,22 +2,8 @@
 cd ~/github/pso-cancer-evolution-2.0/
 source ./env/bin/activate
 
-
-
-DONE:
-- added uniform random trees generation
-- added losses at the end of execution
-- fixed wrong k and added max deletions
-- added gamma rates (single and multiple from file)
-- changed clade attachment algorithm and changed particle iteration
-- added stopping criteria if iterations not in input
-- added automatic calculation of the number of particles
-- total parallel execution of the software
-
-
-
 TODO:
--> migliorare risultati
--> velocizzare esecuzione
--> aggiungere nuove info a data
--> migliorare i fix
+- vedere quale parte dura di più (per eventuale cache)
+- capire qual è il n° di particelle ottimale
+- migliorare lh, non tempo
+- uscire dal plateau

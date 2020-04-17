@@ -1,5 +1,4 @@
 from Node import Node
-import random
 import numpy
 
 
@@ -40,9 +39,9 @@ class Operation(object):
         # select a random node
         # root has no parent, hence cannot add a back mutation
         # keep trying till we find a suitable node
-        node = random.choice(keys)
+        node = numpy.random.choice(keys)
         while node.up == None or node.up.up == None:
-            node = random.choice(keys)
+            node = numpy.random.choice(keys)
 
         # if losses list has reached its maximum, then we can't procede
         if (len(tree.losses_list) >= max_deletions):
@@ -56,9 +55,9 @@ class Operation(object):
         # selecting one random ancestor, based on gamma probabilities
         found = False
         while not found and len(candidates) > 0:
-            candidate = random.choice(candidates)
+            candidate = numpy.random.choice(candidates)
             candidates.remove(candidate)
-            if random.random() < gamma[candidate.mutation_id]:
+            if numpy.random.uniform() < gamma[candidate.mutation_id]:
                 found = True
         if not(found):
             return 3
@@ -92,7 +91,7 @@ class Operation(object):
         """Delete a random mutation from the given tree"""
         if (len(tree.losses_list) == 0):
             return 1
-        node = random.choice(tree.losses_list)
+        node = numpy.random.choice(tree.losses_list)
         node.delete_node(tree)
         return 0
 
@@ -105,13 +104,13 @@ class Operation(object):
         keys = list(nodes.keys())
         u = None
         while (u == None or u.up == None or u.loss):
-            u = random.choice(keys)
+            u = numpy.random.choice(keys)
             keys.remove(u)
 
         keys = list(nodes.keys())
         v = None
         while (v == None or v.up == None or v.loss or u.name == v.name):
-            v = random.choice(keys)
+            v = numpy.random.choice(keys)
             keys.remove(v)
 
         u.swap(v)
@@ -129,13 +128,13 @@ class Operation(object):
             keys = list(nodes_list.keys())
             u = None
             while (u == None or u.up == None or u.loss):
-                u = random.choice(keys)
+                u = numpy.random.choice(keys)
                 keys.remove(u)
 
             keys = list(nodes_list.keys())
             v = None
             while (v == None or v.up == None or v.loss):
-                v = random.choice(keys)
+                v = numpy.random.choice(keys)
                 keys.remove(v)
 
             prune_res = u.prune_and_reattach(v)

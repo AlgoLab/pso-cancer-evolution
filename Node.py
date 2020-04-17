@@ -1,7 +1,6 @@
-import random
 from ete3 import Tree
 from graphviz import Source
-import numpy as np
+import numpy
 import json
 
 import time
@@ -112,8 +111,6 @@ class Node(Tree):
             totally different. It is obtained comparing the genotype profiles
             of the two trees.
         """
-        if self == tree:
-            return 0
 
         genotypes1 = {}
         for n in self.traverse():
@@ -131,7 +128,7 @@ class Node(Tree):
 
         equal = 0
         for n in self.traverse():
-            equal += np.sum(genotypes1[n.mutation_id] == genotypes2[n.mutation_id])
+            equal += numpy.sum(genotypes1[n.mutation_id] == genotypes2[n.mutation_id])
 
         total = len(genotypes1.values())
         dist = 1 - equal / total
@@ -149,7 +146,7 @@ class Node(Tree):
 
         nodes = self.get_clades()
 
-        if random.random() < 0.5:
+        if numpy.random.uniform() < 0.5:
             # calculating and re-scaling difference from [-1,1] to [0,1]
             diff = 10 * (distance - avg_dist)
             if diff > 1:
@@ -161,13 +158,13 @@ class Node(Tree):
             max_h = self.get_height()
             level = int(diff * (max_h - 2)) + 1
 
-            random.shuffle(nodes)
+            numpy.random.shuffle(nodes)
             for n in nodes:
                 if n.get_height() == level:
                     return n
 
         else:
-            return random.choice(nodes)
+            return numpy.random.choice(nodes)
 
 
     def attach_clade(self, tree, clade):

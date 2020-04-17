@@ -1,6 +1,6 @@
 import io
 import sys
-import numpy as np
+import numpy
 from Data import Data
 import multiprocessing as mp
 
@@ -36,7 +36,7 @@ def setup_arguments(arguments):
         raise Exception("Error! Minimum time limit is 30 seconds")
 
     with open(arguments['--infile'], 'r') as f:
-        matrix =  np.atleast_2d(np.loadtxt(io.StringIO(f.read()))) # assuring that we at least have 2D array to work with
+        matrix =  numpy.atleast_2d(numpy.loadtxt(io.StringIO(f.read()))) # assuring that we at least have 2D array to work with
     mutation_number = matrix.shape[1]
     cells = matrix.shape[0]
     matrix = matrix.tolist()

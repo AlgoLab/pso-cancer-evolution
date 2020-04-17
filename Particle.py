@@ -7,7 +7,7 @@ from datetime import datetime
 from collections import deque
 import sys
 import time
-import random
+import numpy
 
 
 class Particle(object):
@@ -16,8 +16,8 @@ class Particle(object):
     def __init__(self, cells, mutation_number, mutation_names, number):
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
         self.number = number
-        self.best = self.current_tree # best tree found by this particle
-        self.max_stall_iterations = 200
+        self.best = self.current_tree.copy() # best tree found by this particle
+        self.max_stall_iterations = 500
         self.best_iteration_likelihoods = []
 
 
@@ -88,7 +88,7 @@ class Particle(object):
         if particle_distance != 0:
             clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper.avg_dist, particle_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
-            clade_destination = random.choice(self.current_tree.phylogeny.get_clades())
+            clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
             clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
             self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
@@ -97,12 +97,12 @@ class Particle(object):
         if swarm_distance != 0:
             clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper.avg_dist, swarm_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
-            clade_destination = random.choice(self.current_tree.phylogeny.get_clades())
+            clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
             clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
             self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # self movement
-        op = random.choice(ns.operations)
+        op = numpy.random.choice(ns.operations)
         Op.tree_operation(self.current_tree, op, helper.k, helper.gamma, helper.max_deletions)
         self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
@@ -112,13 +112,13 @@ class Particle(object):
 
         # update particle best
         if lh > self.best.likelihood:
-            self.best = self.current_tree
+            self.best = self.current_tree.copy()
 
         lock.acquire()
 
         # update swarm best
         if lh > ns.best_swarm.likelihood:
-            ns.best_swarm = self.current_tree
+            ns.best_swarm = self.current_tree.copy()
 
         # update average distance
         tmp = (particle_distance + swarm_distance) / 2
