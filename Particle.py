@@ -17,7 +17,7 @@ class Particle(object):
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
         self.number = number
         self.best = self.current_tree.copy() # best tree found by this particle
-        self.max_stall_iterations = 500
+        self.max_stall_iterations = 300
         self.best_iteration_likelihoods = []
 
 
@@ -77,14 +77,23 @@ class Particle(object):
 
         if self.number == 0:
             ns.best_iteration_likelihoods = self.best_iteration_likelihoods
+        lock.acquire()
+        tmp = ns.iterations_performed
+        tmp[self.number] = it+1
+        ns.iterations_performed = tmp
+        lock.release()
 
 
     def particle_iteration(self, it, helper, best_swarm, ns, lock):
         """The particle makes 3 movements and update the results"""
         start_it = time.time()
 
-        # movement to particle best
+        # calculating distances
         particle_distance = self.current_tree.phylogeny.distance(self.best.phylogeny, helper.mutation_number)
+        swarm_distance = self.current_tree.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
+        it_dist = (particle_distance + swarm_distance) / 2
+
+        # movement to particle best
         if particle_distance != 0:
             clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper.avg_dist, particle_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
@@ -93,7 +102,6 @@ class Particle(object):
             self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # movement to swarm best
-        swarm_distance = self.current_tree.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
         if swarm_distance != 0:
             clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper.avg_dist, swarm_distance)
             clade_to_be_attached = clade_to_be_attached.copy().detach()
@@ -121,12 +129,6 @@ class Particle(object):
             ns.best_swarm = self.current_tree.copy()
 
         # update average distance
-        tmp = (particle_distance + swarm_distance) / 2
-        helper.avg_dist = (helper.avg_dist * it + tmp) / (it + 1)
-
-        # update particle iteration times
-        tmp = ns.particle_iteration_times
-        tmp[self.number].append(time.time() - start_it)
-        ns.particle_iteration_times = tmp
+        helper.avg_dist = (helper.avg_dist * it + it_dist) / (it + 1)
 
         lock.release()

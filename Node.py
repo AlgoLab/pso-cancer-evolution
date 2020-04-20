@@ -104,6 +104,7 @@ class Node(Tree):
         self.up.get_genotype_profile(genotypes)
 
 
+
     def distance(self, tree, mutation_number):
         """
             Calculate distance between this tree and another tree (parameter).

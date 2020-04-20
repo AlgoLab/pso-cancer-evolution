@@ -2,10 +2,13 @@
 cd ~/github/pso-cancer-evolution-2.0/
 source ./env/bin/activate
 
+per copiare anche di la:
+git push --mirror https://github.com/AlgoLab/pso-cancer-evolution.git
+
 TODO:
 - vedere quale parte dura di più (per eventuale cache)
 - capire qual è il n° di particelle ottimale
 - migliorare lh, non tempo
 - uscire dal plateau
 
-prova
+- idea -> cambiare dinamicamente il numero di particelle

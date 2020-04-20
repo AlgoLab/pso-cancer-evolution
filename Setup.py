@@ -35,11 +35,20 @@ def setup_arguments(arguments):
     if max_time < 30:
         raise Exception("Error! Minimum time limit is 30 seconds")
 
+    # read matrix
     with open(arguments['--infile'], 'r') as f:
         matrix =  numpy.atleast_2d(numpy.loadtxt(io.StringIO(f.read()))) # assuring that we at least have 2D array to work with
     mutation_number = matrix.shape[1]
     cells = matrix.shape[0]
     matrix = matrix.tolist()
+
+    # read truematrix if given in input
+    if arguments['--truematrix'] == "0":
+        truematrix = 0
+    else:
+        with open(arguments['--truematrix'], 'r') as f:
+            truematrix =  numpy.atleast_2d(numpy.loadtxt(io.StringIO(f.read())))
+        truematrix = truematrix.tolist()
 
     # default number of particles = number of CPU cores
     if particles == 0:
@@ -48,7 +57,9 @@ def setup_arguments(arguments):
     mutation_names = _read_mutation_names(arguments['--mutfile'], mutation_number)
     gamma = _read_gamma(arguments['--gamma'], mutation_number)
 
-    return particles, iterations, matrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs
+    max_time -= 0.5
+
+    return particles, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs
 
 
 

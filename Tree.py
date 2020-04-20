@@ -127,18 +127,15 @@ class Tree(object):
 
                 for j in range(mutation_number):
 
-                    I = matrix[i][j]
-                    E = node_genotypes[n][j]
-
-                    if I == 0 and E == 0:
+                    if matrix[i][j] == 0 and node_genotypes[n][j] == 0:
                         p = lh_00
-                    elif I == 0 and E == 1:
+                    elif matrix[i][j] == 0 and node_genotypes[n][j] == 1:
                         p = lh_01
-                    elif I == 1 and E == 0:
+                    elif matrix[i][j] == 1 and node_genotypes[n][j] == 0:
                         p = lh_10
-                    elif I == 1 and E == 1:
+                    elif matrix[i][j] == 1 and node_genotypes[n][j] == 1:
                         p = lh_11
-                    elif I == 2:
+                    elif matrix[i][j] == 2:
                         p = 0
                     else:
                         raise SystemError("Unknown value!")
@@ -172,7 +169,7 @@ class Tree(object):
         for i in range(cells):
             best_sigma = -1
             best_lh = float("-inf")
-            best_values = [0]*5
+            cell_values = [0]*5
 
             for n in range(len(nodes_list)):
                 lh = 0
@@ -186,11 +183,11 @@ class Tree(object):
                 if lh > best_lh:
                     best_sigma = n
                     best_lh = lh
-                    best_values = values
+                    cell_values = values
 
             tree.best_sigma[i] = best_sigma
             maximum_likelihood += best_lh
-            final_values = [sum(x) for x in zip(final_values, best_values)]
+            final_values = [sum(x) for x in zip(final_values, cell_values)]
 
         data.false_positives = final_values[0]
         data.false_negatives = final_values[1]
