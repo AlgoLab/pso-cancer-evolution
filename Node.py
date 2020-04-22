@@ -3,8 +3,6 @@ from graphviz import Source
 import numpy
 import json
 
-import time
-
 class Node(Tree):
 
     def _get_uid(self):
@@ -104,7 +102,6 @@ class Node(Tree):
         self.up.get_genotype_profile(genotypes)
 
 
-
     def distance(self, tree, mutation_number):
         """
             Calculate distance between this tree and another tree (parameter).
@@ -112,7 +109,6 @@ class Node(Tree):
             totally different. It is obtained comparing the genotype profiles
             of the two trees.
         """
-
         genotypes1 = {}
         for n in self.traverse():
             if not n.loss:
@@ -144,7 +140,6 @@ class Node(Tree):
             in the past clade attachments: based on that, it chooses
             the height of the clade, and randomly, it chooses which clade.
         """
-
         nodes = self.get_clades()
 
         if numpy.random.uniform() < 0.5:
@@ -163,7 +158,6 @@ class Node(Tree):
             for n in nodes:
                 if n.get_height() == level:
                     return n
-
         else:
             return numpy.random.choice(nodes)
 

@@ -74,7 +74,7 @@ Done!
 - `--tolerance [FLOAT]`: Minimum relative improvement (between 0 and 1) in the last 300 iterations in order to keep going, if iterations are zero [default: 0.005].
 - `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 300].
 - `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
-- `--truematrx [STRING]`: True matrix, for algorithm testing [default: 0].
+- `--truematrix [STRING]`: Actual correct matrix, for algorithm testing [default: 0].
 
 
 ## Examples

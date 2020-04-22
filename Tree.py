@@ -2,6 +2,7 @@ from Node import Node
 from Operation import Operation as Op
 import numpy
 import math
+import copy
 
 # for a uniform random tree generation
 used_combinations = []
@@ -37,10 +38,8 @@ class Tree(object):
         t = Tree(self.cells, self.mutations)
         t.likelihood = self.likelihood
         t.phylogeny = self.phylogeny.copy()
-        for n in t.phylogeny.traverse():
-            if n.loss:
-                t.losses_list.append(n)
-                t.k_losses_list[n.mutation_id] += 1
+        t.losses_list = copy.copy(self.losses_list)
+        t.k_losses_list = copy.copy(self.k_losses_list)
         return t
 
 

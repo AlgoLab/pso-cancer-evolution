@@ -32,7 +32,7 @@ class Particle(object):
         self.proc.join()
 
 
-    def run_iterations(self, iterations, helper, ns, lock):
+    def run_iterations_working(self, iterations, helper, ns, lock):
         """execute the iterations and stops after reaching a stopping criteria"""
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
@@ -40,7 +40,7 @@ class Particle(object):
         bm = False
 
         for it in range(iterations):
-            self.particle_iteration(it, helper, ns.best_swarm, ns, lock)
+            self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
 
             if self.number == 0:
 
@@ -83,10 +83,74 @@ class Particle(object):
         ns.iterations_performed = tmp
         lock.release()
 
+    def run_iterations(self, iterations, helper, ns, lock):
+        """execute the iterations and stops after reaching a stopping criteria"""
+        start_time = time.time()
+        old_lh = ns.best_swarm.likelihood
+        improvements = deque([1] * int(self.max_stall_iterations/3)) # queue
+        phase = 0
+
+        for it in range(iterations):
+
+            if ns.do[self.number]:
+                self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
+            else:
+                time.sleep(5)
+
+            if self.number == 0:
+
+                lh = ns.best_swarm.likelihood
+                improvements.popleft()
+                improvements.append(1 - lh / old_lh)
+                old_lh = lh
+
+                if it % 20 == 0:
+                    print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
+
+
+                # if 3/4 of max time
+                b1 = (time.time() - start_time) >= (3/4)*(helper.max_time)
+
+                # if iterations given in input and 3/4 of iterations
+                b2 = not(ns.automatic_stop) and it >= (3/4)*iterations
+
+                # if iterations not given in input and stuck on fitness value
+                b3 = ns.automatic_stop and sum(improvements) < (helper.tolerance)
+
+                if b1 or b2 or b3:
+
+                    if phase == 0:
+                        improvements = deque([1] * self.max_stall_iterations)
+                        tmp = ns.do
+                        tmp = [True] * len(tmp)
+                        ns.do = tmp
+
+                    elif phase == 1:
+                        improvements = deque([1] * self.max_stall_iterations)
+                        ns.operations = [0,1,2,3]
+
+                    phase += 1
+
+
+                self.best_iteration_likelihoods.append(lh)
+
+                if ns.automatic_stop and (sum(improvements) < helper.tolerance or (time.time() - start_time) >= (helper.max_time)):
+                    ns.stop = True
+
+            if ns.automatic_stop and ns.stop:
+                break
+
+        if self.number == 0:
+            ns.best_iteration_likelihoods = self.best_iteration_likelihoods
+        lock.acquire()
+        tmp = ns.iterations_performed
+        tmp[self.number] = it+1
+        ns.iterations_performed = tmp
+        lock.release()
+
 
     def particle_iteration(self, it, helper, best_swarm, ns, lock):
         """The particle makes 3 movements and update the results"""
-        start_it = time.time()
 
         # calculating distances
         particle_distance = self.current_tree.phylogeny.distance(self.best.phylogeny, helper.mutation_number)

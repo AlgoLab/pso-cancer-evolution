@@ -20,7 +20,7 @@ Options:
     --maxdel=<max_deletions>                    Maximum number of total deletions allowed [default: 5].
     --tolerance=<tolerance>                     Minimum relative improvement (between 0 and 1) in the last 300 iterations in order to keep going, if iterations are zero [default: 0.005].
     --maxtime=<maxtime>                         Maximum time (in seconds) of total PSOSC execution [default: 300].
-    --truematrix=<truematrix>                   True matrix, for algorithm testing [default: 0].
+    --truematrix=<truematrix>                   Actual correct matrix, for algorithm testing [default: 0].
 
 """
 
@@ -83,8 +83,9 @@ def pso(nparticles, iterations, matrix, truematrix, mutation_number, mutation_na
     pso_execution(particles, iterations)
 
     print("\n • FINAL RESULTS")
+    t = (data.initialization_end - data.initialization_start) + (data.pso_end - data.pso_start)
     print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_end - data.pso_start, 2))))
-    print("\t- best likelihood: %s\n" % str(round(helper.best_particle.best.likelihood, 2)))
+    print("\t- best likelihood (particle n° %d): %s\n" % (helper.best_particle.number, str(round(helper.best_particle.best.likelihood, 2))))
 
     return data, helper
 
@@ -129,6 +130,9 @@ def pso_execution(particles, iterations):
     ns.stop = False
     ns.automatic_stop = iterations == 0
     ns.operations = [2,3]
+
+    do = [True] * int(data.nofparticles/2) + [False] * int(data.nofparticles/2)
+    ns.do = do
 
     # run particle processes
     for p in particles:
