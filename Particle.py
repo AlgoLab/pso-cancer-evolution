@@ -32,12 +32,12 @@ class Particle(object):
         self.proc.join()
 
 
-    def run_iterations_working(self, iterations, helper, ns, lock):
+    def run_iterations(self, iterations, helper, ns, lock):
         """execute the iterations and stops after reaching a stopping criteria"""
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
         improvements = deque([1] * self.max_stall_iterations) # queue
-        bm = False
+        bm_phase = False
 
         for it in range(iterations):
             self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
@@ -52,7 +52,7 @@ class Particle(object):
                 if it % 20 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
-                if not(bm):
+                if not(bm_phase):
                     # if 3/4 of max time
                     b1 = (time.time() - start_time) >= (3/4)*(helper.max_time)
 
@@ -64,73 +64,8 @@ class Particle(object):
 
                     if b1 or b2 or b3:
                         improvements = deque([1] * self.max_stall_iterations)
-                        bm = True
+                        bm_phase = True
                         ns.operations = [0,1,2,3]
-
-                self.best_iteration_likelihoods.append(lh)
-
-                if ns.automatic_stop and (sum(improvements) < helper.tolerance or (time.time() - start_time) >= (helper.max_time)):
-                    ns.stop = True
-
-            if ns.automatic_stop and ns.stop:
-                break
-
-        if self.number == 0:
-            ns.best_iteration_likelihoods = self.best_iteration_likelihoods
-        lock.acquire()
-        tmp = ns.iterations_performed
-        tmp[self.number] = it+1
-        ns.iterations_performed = tmp
-        lock.release()
-
-    def run_iterations(self, iterations, helper, ns, lock):
-        """execute the iterations and stops after reaching a stopping criteria"""
-        start_time = time.time()
-        old_lh = ns.best_swarm.likelihood
-        improvements = deque([1] * int(self.max_stall_iterations/3)) # queue
-        phase = 0
-
-        for it in range(iterations):
-
-            if ns.do[self.number]:
-                self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
-            else:
-                time.sleep(5)
-
-            if self.number == 0:
-
-                lh = ns.best_swarm.likelihood
-                improvements.popleft()
-                improvements.append(1 - lh / old_lh)
-                old_lh = lh
-
-                if it % 20 == 0:
-                    print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
-
-
-                # if 3/4 of max time
-                b1 = (time.time() - start_time) >= (3/4)*(helper.max_time)
-
-                # if iterations given in input and 3/4 of iterations
-                b2 = not(ns.automatic_stop) and it >= (3/4)*iterations
-
-                # if iterations not given in input and stuck on fitness value
-                b3 = ns.automatic_stop and sum(improvements) < (helper.tolerance)
-
-                if b1 or b2 or b3:
-
-                    if phase == 0:
-                        improvements = deque([1] * self.max_stall_iterations)
-                        tmp = ns.do
-                        tmp = [True] * len(tmp)
-                        ns.do = tmp
-
-                    elif phase == 1:
-                        improvements = deque([1] * self.max_stall_iterations)
-                        ns.operations = [0,1,2,3]
-
-                    phase += 1
-
 
                 self.best_iteration_likelihoods.append(lh)
 
@@ -179,7 +114,7 @@ class Particle(object):
         self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # updating log likelihood and bests
-        lh = Tree.greedy_loglikelihood(self.current_tree, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
+        lh = Tree.greedy_loglikelihood(self.current_tree, helper.matrix, helper.cells, helper.mutation_number)
         self.current_tree.likelihood = lh
 
         # update particle best

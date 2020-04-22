@@ -6,7 +6,7 @@ import copy
 
 # for a uniform random tree generation
 used_combinations = []
-
+probability = [[0,0],[0,0],[0,0]]
 
 class Tree(object):
 
@@ -19,6 +19,14 @@ class Tree(object):
         self.best_sigma = [0] * cells
         self.likelihood = float("-inf")
         self.phylogeny = None
+
+    @classmethod
+    def set_probabilities(cls, alpha, beta):
+        global probability
+        probability[0][0] = math.log(1-beta)
+        probability[1][0] = math.log(beta)
+        probability[0][1] = math.log(alpha)
+        probability[1][1] = math.log(1-alpha)
 
 
     def update_losses_list(self):
@@ -94,7 +102,7 @@ class Tree(object):
 
             if valid:
                 used_combinations += temp_list
-            elif attempts > 200:
+            elif attempts > 100:
                 used_combinations = []
                 attempts = 0
             attempts += 1
@@ -103,49 +111,30 @@ class Tree(object):
 
 
     @classmethod
-    def greedy_loglikelihood(cls, tree, matrix, cells, mutation_number, alpha, beta):
+    def greedy_loglikelihood(cls, tree, matrix, cells, mutation_number):
         """Gets maximum likelihood of a tree"""
+        global probability
+
         nodes_list = tree.phylogeny.get_cached_content()
         node_genotypes = [[0 for j in range(mutation_number)] for i in range(len(nodes_list))]
         for i, n in enumerate(nodes_list):
             n.get_genotype_profile(node_genotypes[i])
-
-        lh_00 = math.log(1-beta)
-        lh_10 = math.log(beta)
-        lh_01 = math.log(alpha)
-        lh_11 = math.log(1-alpha)
+        node_genotypes = [list(map(int, x)) for x in node_genotypes]
 
         maximum_likelihood = 0
 
         for i in range(cells):
-            best_sigma = -1
             best_lh = float("-inf")
 
             for n in range(len(nodes_list)):
                 lh = 0
 
                 for j in range(mutation_number):
-
-                    if matrix[i][j] == 0 and node_genotypes[n][j] == 0:
-                        p = lh_00
-                    elif matrix[i][j] == 0 and node_genotypes[n][j] == 1:
-                        p = lh_01
-                    elif matrix[i][j] == 1 and node_genotypes[n][j] == 0:
-                        p = lh_10
-                    elif matrix[i][j] == 1 and node_genotypes[n][j] == 1:
-                        p = lh_11
-                    elif matrix[i][j] == 2:
-                        p = 0
-                    else:
-                        raise SystemError("Unknown value!")
-
-                    lh += p
+                    lh += probability [matrix[i][j]] [node_genotypes[n][j]]
 
                 if lh > best_lh:
-                    best_sigma = n
                     best_lh = lh
 
-            tree.best_sigma[i] = best_sigma
             maximum_likelihood += best_lh
 
         return maximum_likelihood

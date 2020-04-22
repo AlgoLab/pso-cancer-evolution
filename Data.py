@@ -9,7 +9,8 @@ import numpy
 class Data(object):
 
 
-    def __init__(self, nofparticles):
+    def __init__(self, filename, nofparticles):
+        self.filename = filename[filename.rfind('/')+1:]
         self.pso_start = 0
         self.pso_end = 0
         self.initialization_start = 0
@@ -63,39 +64,41 @@ class Data(object):
         plt.clf()
 
         #  execution info [text file]
-        f = open(dir + "/results.txt", "w+")
-        f.write(">> Number of particles: %d\n" % self.nofparticles)
-        f.write(">> Number of iterations for each particle:\n")
-        for i in range(self.nofparticles):
-            f.write("\t- particle %d: %d\n" % (i, self.iterations_performed[i]))
-        f.write("\n>> Number of cells: %d\n" % helper.cells)
-        f.write(">> Number of mutations: %d\n" % helper.mutation_number)
+        f = open(dir + "/results_" + self.filename, "w+")
+        f.write("\n---------------------------------\n")
         f.write("\n>> Starting likelihood: %f\n" % self.starting_likelihood)
         f.write(">> Final likelihood:    %f\n" % helper.best_particle.best.likelihood)
-        f.write("\n>> Added mutations: %s\n" % ', '.join(map(str, helper.best_particle.best.losses_list)))
-
-
         f.write("\n>> False negatives:      %d\t(%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 1))))
         f.write(">> False positives:      %d\t(%s%%)\n" % (self.false_positives, str(round(self.false_positives_relative, 1))))
         f.write(">> True negatives:       %d\t(%s%%)\n" % (self.true_negatives, str(round(self.true_negatives_relative, 1))))
         f.write(">> True positives:       %d\t(%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 1))))
         f.write(">> Added missing values: %d\t(%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 1))))
-
+        f.write("\n---------------------------------\n")
         if helper.truematrix != 0:
             lh = self.calculate_relative_data(helper, helper.truematrix)
-            f.write("\nActual correct matrix: starting lh = %f\n" % (self.starting_likelihood_true))
-            f.write("                       final lh =    %f\n" % (lh))
-            f.write(">> False negatives:      %d\t(%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 1))))
+            f.write("\n[Actual correct matrix]\n")
+            f.write(">> Starting lh = %f\n" % (self.starting_likelihood_true))
+            f.write(">> Final lh =    %f\n" % (lh))
+            f.write("\n>> False negatives:      %d\t(%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 1))))
             f.write(">> False positives:      %d\t(%s%%)\n" % (self.false_positives, str(round(self.false_positives_relative, 1))))
             f.write(">> True negatives:       %d\t(%s%%)\n" % (self.true_negatives, str(round(self.true_negatives_relative, 1))))
             f.write(">> True positives:       %d\t(%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 1))))
             f.write(">> Added missing values: %d\t(%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 1))))
-
+            f.write("\n---------------------------------\n")
+        f.write("\n>> Number of particles: %d\n" % self.nofparticles)
+        f.write(">> Number of iterations for each particle:\n")
+        for i in range(self.nofparticles):
+            f.write("\t- particle %d: %d\n" % (i, self.iterations_performed[i]))
+        f.write("\n>> Number of cells: %d\n" % helper.cells)
+        f.write(">> Number of mutations: %d\n" % helper.mutation_number)
+        f.write("\n>> Added mutations: %s\n" % ', '.join(map(str, helper.best_particle.best.losses_list)))
         f.write("\n>> Initialization completed in: %f seconds\n" % (self.initialization_end - self.initialization_start))
         f.write(">> PSO completed in:            %f seconds\n" % (self.pso_end - self.pso_start))
-
-        f.write("\n\nBest Tree in Tikz format:\n")
+        f.write("\n---------------------------------\n")
+        f.write("\nBest Tree in Tikz format:\n")
         f.write(helper.best_particle.best.phylogeny.to_tikz())
+        f.write("\n\n---------------------------------\n\n")
+
         f.close()
 
 

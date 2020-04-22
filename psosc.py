@@ -46,7 +46,7 @@ data = None
 
 def main(argv):
     arguments = docopt(__doc__, version = "PSOSC-Cancer-Evolution 2.0")
-    (particles, iterations, matrix, truematrix, mutation_number, mutation_names, cells,
+    (filename, particles, iterations, matrix, truematrix, mutation_number, mutation_names, cells,
         alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs) = Setup.setup_arguments(arguments)
 
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
@@ -54,7 +54,7 @@ def main(argv):
     if multiple_runs is None:
         if not os.path.exists(base_dir):
             os.makedirs(base_dir)
-        data, helper = pso(particles, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
+        data, helper = pso(filename, particles, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
         data.summary(helper, base_dir)
     else:
         runs_data = []
@@ -69,11 +69,12 @@ def main(argv):
         Data.runs_summary(multiple_runs, runs_data, base_dir)
 
 
-def pso(nparticles, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time):
+def pso(filename, nparticles, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time):
     global helper
     global data
     helper = Helper(matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
-    data = Data(nparticles)
+    data = Data(filename, nparticles)
+    Tree.set_probabilities(alpha, beta)
 
     print("\n • PARTICLES START-UP")
     particles = pso_initialization(nparticles)
@@ -85,7 +86,7 @@ def pso(nparticles, iterations, matrix, truematrix, mutation_number, mutation_na
     print("\n • FINAL RESULTS")
     t = (data.initialization_end - data.initialization_start) + (data.pso_end - data.pso_start)
     print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_end - data.pso_start, 2))))
-    print("\t- best likelihood (particle n° %d): %s\n" % (helper.best_particle.number, str(round(helper.best_particle.best.likelihood, 2))))
+    print("\t- best likelihood: %s\n" % str(round(helper.best_particle.best.likelihood, 2)))
 
     return data, helper
 
@@ -99,14 +100,14 @@ def pso_initialization(nparticles):
     particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n) for n in range(nparticles)]
     helper.best_particle = particles[0]
     for p in particles:
-        p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
+        p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number)
         p.best.likelihood = p.current_tree.likelihood
         if (p.current_tree.likelihood > helper.best_particle.best.likelihood):
             helper.best_particle = p
     data.starting_likelihood = helper.best_particle.best.likelihood
 
     if helper.truematrix != 0:
-        data.starting_likelihood_true = Tree.greedy_loglikelihood(helper.best_particle.best, helper.truematrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
+        data.starting_likelihood_true = Tree.greedy_loglikelihood(helper.best_particle.best, helper.truematrix, helper.cells, helper.mutation_number)
 
     data.initialization_end = time.time()
     return particles
@@ -130,9 +131,6 @@ def pso_execution(particles, iterations):
     ns.stop = False
     ns.automatic_stop = iterations == 0
     ns.operations = [2,3]
-
-    do = [True] * int(data.nofparticles/2) + [False] * int(data.nofparticles/2)
-    ns.do = do
 
     # run particle processes
     for p in particles:
