@@ -3,6 +3,8 @@ from Operation import Operation as Op
 import numpy
 import math
 import copy
+import ctypes
+from ctypes import *
 
 # for a uniform random tree generation
 used_combinations = []
@@ -111,7 +113,35 @@ class Tree(object):
 
 
     @classmethod
-    def greedy_loglikelihood(cls, tree, matrix, cells, mutation_number):
+    def greedy_loglikelihood(cls, tree, matrix, cells, mutation_number, alpha, beta):
+        """Gets maximum likelihood of a tree"""
+        nodes_list = tree.phylogeny.get_cached_content()
+        node_genotypes = [[0 for j in range(mutation_number)] for i in range(len(nodes_list))]
+        for i, n in enumerate(nodes_list):
+            n.get_genotype_profile(node_genotypes[i])
+        node_genotypes = [list(map(int, x)) for x in node_genotypes]
+        node_genotypes = numpy.matrix(node_genotypes, dtype=numpy.int32)
+        node_genotypes.flatten()
+
+        matrix = numpy.matrix(matrix, dtype=numpy.int32)
+        matrix.flatten()
+
+        # converting types for c library
+        alpha = c_double(alpha)
+        beta = c_double(beta)
+        node_genotypes = node_genotypes.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+        matrix = matrix.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+
+        # calling library
+        lh_lib = CDLL("./lh_test.so")
+        lh_lib.greedy_tree_loglikelihood.argtypes = [POINTER(c_int), POINTER(c_int), c_int, c_int, c_int, c_double, c_double]
+        lh_lib.greedy_tree_loglikelihood.restype = c_double
+
+        return lh_lib.greedy_tree_loglikelihood(matrix, node_genotypes, cells, len(nodes_list), mutation_number, alpha, beta)
+
+
+    @classmethod
+    def greedy_loglikelihood_slow(cls, tree, matrix, cells, mutation_number):
         """Gets maximum likelihood of a tree"""
         global probability
 
@@ -127,10 +157,7 @@ class Tree(object):
             best_lh = float("-inf")
 
             for n in range(len(nodes_list)):
-                lh = 0
-
-                for j in range(mutation_number):
-                    lh += probability [matrix[i][j]] [node_genotypes[n][j]]
+                lh = sum([probability[matrix[i][j]][node_genotypes[n][j]] for j in range(mutation_number)])
 
                 if lh > best_lh:
                     best_lh = lh

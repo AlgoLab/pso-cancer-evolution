@@ -84,8 +84,8 @@ def pso(filename, nparticles, iterations, matrix, truematrix, mutation_number, m
     pso_execution(particles, iterations)
 
     print("\n • FINAL RESULTS")
-    t = (data.initialization_end - data.initialization_start) + (data.pso_end - data.pso_start)
-    print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.pso_end - data.pso_start, 2))))
+    execution_time = (data.initialization_end - data.initialization_start) + (data.pso_end - data.pso_start)
+    print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(execution_time, 2))))
     print("\t- best likelihood: %s\n" % str(round(helper.best_particle.best.likelihood, 2)))
 
     return data, helper
@@ -100,14 +100,14 @@ def pso_initialization(nparticles):
     particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n) for n in range(nparticles)]
     helper.best_particle = particles[0]
     for p in particles:
-        p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number)
+        p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
         p.best.likelihood = p.current_tree.likelihood
         if (p.current_tree.likelihood > helper.best_particle.best.likelihood):
             helper.best_particle = p
     data.starting_likelihood = helper.best_particle.best.likelihood
 
     if helper.truematrix != 0:
-        data.starting_likelihood_true = Tree.greedy_loglikelihood(helper.best_particle.best, helper.truematrix, helper.cells, helper.mutation_number)
+        data.starting_likelihood_true = Tree.greedy_loglikelihood(helper.best_particle.best, helper.truematrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)
 
     data.initialization_end = time.time()
     return particles
