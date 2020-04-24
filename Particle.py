@@ -17,7 +17,7 @@ class Particle(object):
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
         self.number = number
         self.best = self.current_tree.copy() # best tree found by this particle
-        self.max_stall_iterations = 500
+        self.max_stall_iterations = 750
         self.best_iteration_likelihoods = []
 
 
@@ -38,6 +38,7 @@ class Particle(object):
         old_lh = ns.best_swarm.likelihood
         improvements = deque([1] * self.max_stall_iterations) # queue
         bm_phase = False
+        exit_local_iterations = 500
 
         for it in range(iterations):
             self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
@@ -47,33 +48,29 @@ class Particle(object):
                 lh = ns.best_swarm.likelihood
                 improvements.popleft()
                 improvements.append(1 - lh / old_lh)
-
-                # update on screen
-                if it % 10 == 0 and lh != old_lh:
-                    print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
-
                 old_lh = lh
 
-                # check if it has to start adding backmutations
-                if not(bm_phase):
-                    # if 3/4 of max time
-                    b1 = (time.time() - start_time) >= (3/4)*(helper.max_time)
+                # update on screen
+                if it % 25 == 0:
+                    print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
-                    # if iterations given in input and 3/4 of iterations
-                    b2 = not(ns.automatic_stop) and it >= (3/4)*iterations
+                if exit_local_iterations < -150 and sum(list(improvements)[400:]) < helper.tolerance:
+                    exit_local_iterations = 50
+                    ns.attach = False
+                elif exit_local_iterations < 0:
+                    ns.attach = True
+                exit_local_iterations -= 1
 
-                    # if iterations not given in input and stuck on fitness value
-                    b3 = ns.automatic_stop and sum(improvements) < helper.tolerance
-
-                    if b1 or b2 or b3:
-                        improvements = deque([1] * self.max_stall_iterations)
-                        ns.operations = [0,1,2,3]
-                        bm_phase = True
+                # check if it's time to start adding backmutations
+                if not(bm_phase) and self.start_backmutations((time.time()-start_time), helper.max_time, ns.automatic_stop, it, iterations, improvements, helper.tolerance):
+                    improvements = deque([1] * self.max_stall_iterations)
+                    ns.operations = [0,1,2,3]
+                    bm_phase = True
 
                 self.best_iteration_likelihoods.append(lh)
 
-                # check if it has to stop
-                if ns.automatic_stop and (sum(improvements) < helper.tolerance or (time.time() - start_time) >= (helper.max_time)):
+                # check if it's time to stop
+                if ns.automatic_stop and (sum(improvements) < helper.tolerance or (time.time()-start_time) >= (helper.max_time)):
                     ns.stop = True
 
             if ns.automatic_stop and ns.stop:
@@ -88,6 +85,19 @@ class Particle(object):
         lock.release()
 
 
+    def start_backmutations(self, elapsed_time, max_time, automatic_stop, it, iterations, improvements, tolerance):
+        # if 3/4 of max time
+        b1 = elapsed_time >= (3/4)*max_time
+
+        # if iterations given in input and 3/4 of iterations
+        b2 = not(automatic_stop) and it >= (3/4)*iterations
+
+        # if iterations not given in input and stuck on fitness value
+        b3 = automatic_stop and sum(improvements) < tolerance
+
+        return (b1 or b2 or b3)
+
+
     def particle_iteration(self, it, helper, best_swarm, ns, lock):
         """The particle makes 3 movements and update the results"""
 
@@ -96,21 +106,23 @@ class Particle(object):
         swarm_distance = self.current_tree.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
         it_dist = (particle_distance + swarm_distance) / 2
 
-        # movement to particle best
-        if particle_distance != 0:
-            clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper.avg_dist, particle_distance)
-            clade_to_be_attached = clade_to_be_attached.copy().detach()
-            clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
-            clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
-            self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
+        if ns.attach:
 
-        # movement to swarm best
-        if swarm_distance != 0:
-            clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper.avg_dist, swarm_distance)
-            clade_to_be_attached = clade_to_be_attached.copy().detach()
-            clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
-            clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
-            self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
+            # movement to particle best
+            if particle_distance != 0:
+                clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(helper.avg_dist, particle_distance)
+                clade_to_be_attached = clade_to_be_attached.copy().detach()
+                clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
+                clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
+                self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
+
+            # movement to swarm best
+            if swarm_distance != 0:
+                clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(helper.avg_dist, swarm_distance)
+                clade_to_be_attached = clade_to_be_attached.copy().detach()
+                clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
+                clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
+                self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # self movement
         op = numpy.random.choice(ns.operations)

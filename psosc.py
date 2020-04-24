@@ -63,7 +63,7 @@ def main(argv):
             run_dir = base_dir + "/particles%d_run%d" % (ptcl, r)
             if not os.path.exists(run_dir):
                 os.makedirs(run_dir)
-            data, helper = pso(ptcl, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
+            data, helper = pso(filename, ptcl, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time)
             data.summary(helper, run_dir)
             runs_data.append(data)
         Data.runs_summary(multiple_runs, runs_data, base_dir)
@@ -131,6 +131,7 @@ def pso_execution(particles, iterations):
     ns.stop = False
     ns.automatic_stop = iterations == 0
     ns.operations = [2,3]
+    ns.attach = True
 
     # run particle processes
     for p in particles:
