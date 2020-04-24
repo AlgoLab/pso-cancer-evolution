@@ -71,8 +71,8 @@ Done!
 - `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 5].
-- `--tolerance [FLOAT]`: Minimum relative improvement (between 0 and 1) in the last 300 iterations in order to keep going, if iterations are zero [default: 0.005].
-- `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 300].
+- `--tolerance [FLOAT]`: Minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are zero [default: 0.005].
+- `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 1200].
 - `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
 - `--truematrix [STRING]`: Actual correct matrix, for algorithm testing [default: 0].
 

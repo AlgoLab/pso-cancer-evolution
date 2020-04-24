@@ -104,7 +104,7 @@ class Tree(object):
 
             if valid:
                 used_combinations += temp_list
-            elif attempts > 100:
+            elif attempts > 150:
                 used_combinations = []
                 attempts = 0
             attempts += 1

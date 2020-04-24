@@ -109,6 +109,7 @@ class Data(object):
         for data in runs_data:
             likelihoods.append(max(data.best_iteration_likelihoods))
 
+        # pdf plot 1
         ax = plt.figure().gca()
         plt.title("Likelihood per run")
         plt.xlabel("Number of particles")
@@ -117,13 +118,12 @@ class Data(object):
         plt.plot(runs, likelihoods)
         plt.savefig(dir + "/likelihood.pdf")
 
+        # pdf plot 2
         ax = plt.figure().gca()
         plt.title("Efficiency per run")
         plt.xlabel("Number of particles")
         plt.ylabel("Log Likelihood / Time")
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-
-
         times = []
         for data in runs_data:
             times.append((data.pso_end - data.pso_start))
@@ -132,6 +132,7 @@ class Data(object):
         plt.plot(runs, lht)
         plt.savefig(dir + "/efficiency.pdf")
 
+        # info text file
         f = open(dir + "/results.txt", "w+")
         f.write("Run results table for LaTeX:\n")
         f.write("\\begin{tabular}{*{5}{c}}\n")
@@ -145,7 +146,6 @@ class Data(object):
             lh1 = data.starting_likelihood
             lh2 = max(data.best_iteration_likelihoods)
             t = data.pso_end-data.pso_start
-
             f.write("\t%s & %s & %f & %f & %f \\\\\n" % (nofp, its, lh1, lh2, t))
         f.write("\\end{tabular}")
         f.close()

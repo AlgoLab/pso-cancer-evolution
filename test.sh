@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd ./$1
+cd $1
 number_of_files=$[$(ls | wc -l)/4]
 
 cd ~/github/pso-cancer-evolution-2.0/
@@ -9,7 +9,7 @@ source ./env/bin/activate
 
 
 for ((i = 1 ; i <= $number_of_files ; i++)); do
-	python3 psosc.py -i "./$1/sim_${i}_scs.txt" --truematrix "./$1/sim_${i}_truescs.txt" -t 20
+	python3 psosc.py -i "$1/sim_${i}_scs.txt" --truematrix "$1/sim_${i}_truescs.txt" -t 20
 done
 
 
