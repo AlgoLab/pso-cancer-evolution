@@ -38,7 +38,7 @@ class Particle(object):
         old_lh = ns.best_swarm.likelihood
         improvements = deque([1] * self.max_stall_iterations) # queue
         bm_phase = False
-        exit_local_iterations = 500
+        exit_local_iterations = 750
 
         for it in range(iterations):
             self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
@@ -54,7 +54,7 @@ class Particle(object):
                 if it % 25 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
-                if exit_local_iterations < -150 and sum(list(improvements)[400:]) < helper.tolerance:
+                if exit_local_iterations < -150 and sum(list(improvements)[600:]) < helper.tolerance:
                     exit_local_iterations = 50
                     ns.attach = False
                 elif exit_local_iterations < 0:

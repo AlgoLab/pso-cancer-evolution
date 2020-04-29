@@ -9,7 +9,7 @@ source ./env/bin/activate
 
 
 for ((i = 1 ; i <= $number_of_files ; i++)); do
-	python3 psosc.py -i "$1/sim_${i}_scs.txt" --truematrix "$1/sim_${i}_truescs.txt" -t 20
+	python3 psosc.py -i "$1/sim_${i}_scs.txt" --truematrix "$1/sim_${i}_truescs.txt"
 done
 
 

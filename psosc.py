@@ -98,6 +98,7 @@ def pso_initialization(nparticles):
     data.initialization_start = time.time()
 
     particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n) for n in range(nparticles)]
+    Tree.empty_combinations()
     helper.best_particle = particles[0]
     for p in particles:
         p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number, helper.alpha, helper.beta)

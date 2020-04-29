@@ -91,11 +91,10 @@ class Tree(object):
         while not valid:
             tree = mutations.copy()
             numpy.random.shuffle(tree)
-
             temp_list = []
 
             valid = True
-            for length in [3,4,5]:
+            for length in [3,4]:
                 for i in range (len(tree) - length + 1):
                     temp = tree[i : i + length]
                     temp_list.append(temp)
@@ -104,12 +103,18 @@ class Tree(object):
 
             if valid:
                 used_combinations += temp_list
-            elif attempts > 150:
+            elif attempts > 20:
                 used_combinations = []
                 attempts = 0
             attempts += 1
 
         return tree
+
+
+    @classmethod
+    def empty_combinations(cls):
+        global used_combinations
+        used_combinations = []
 
 
     @classmethod
