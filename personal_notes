@@ -2,8 +2,11 @@
 cd ~/github/pso-cancer-evolution-2.0/
 source ./env/bin/activate
 
+per buildare file .c
+  gcc -shared -Wl,-soname,testlib -o greedy_tree_loglikelihood.so -fPIC greedy_tree_loglikelihood.c
+
 per copiare anche di la:
-git push --mirror https://github.com/AlgoLab/pso-cancer-evolution.git
+  git push --mirror https://github.com/AlgoLab/pso-cancer-evolution.git
 
 TODO:
 - vedere quale parte dura di più (per eventuale cache)

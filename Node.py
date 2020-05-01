@@ -163,7 +163,7 @@ class Node(Tree):
 
 
     def attach_clade(self, tree, clade):
-        """Remove every node already in clade"""
+        """Attach the clade to this tree"""
         nodes_list = self.get_tree_root().get_cached_content()
         clade_to_be_attached = clade.get_cached_content()
         clade_destination = self
@@ -182,7 +182,6 @@ class Node(Tree):
                         # moving up
                         if clade_destination == n:
                             clade_destination = n.up
-
                         n.delete(prevent_nondicotomic=False)
                         removed.append(n)
 

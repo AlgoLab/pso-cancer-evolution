@@ -2,10 +2,9 @@
 
 
 ## The General Idea
-
 The goal is to find an optimal tree given the input matrix.
 
-### Procedure
+#### Procedure
   - Create particles
   - Every particle run independently from the others:
       - Inertia movement (random operation)
@@ -26,6 +25,8 @@ We switch from the first to the second part when:
   - 3/4 of total iterations (if iterations given in input)
   - stuck on a fitness value (if iterations not given in input)
 
+For the entire execution, when stuck in a local optimum, some random operation will be performed on every tree, in order to exit it.
+
 The particles stop when:
   - they reach maxtime
   - they reach total iterations (if iterations given in input)
@@ -33,7 +34,6 @@ The particles stop when:
 
 
 ## Setup
-
 I recommend creating a `virtualenv` with `python3` (just for the 1st time):
 ```shell
 $ virtualenv env -p `which python3`
@@ -58,13 +58,13 @@ Done!
 
 
 ## Usage
-
-**Required input Parameters**
+**Required input parameters**
 - `--infile [STRING]`: Matrix input file
 
 **Optional input parameters**
 - `--mutfile [STRING]`: Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-- `--particles [INT]`: Number of particles to use for PSO. If not used or zero, it will be number of CPU cores [default: 0]
+- `--particles [INT]`: Number of particles to use for PSO. If not used or zero, it'll be number of CPU cores used [default: 0]
+- `--cores [INT]`: Number of CPU cores used for the execution. If not used or zero, it'll be half of this computer's CPU cores [default: 0]
 - `--iterations [INT]`: Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
@@ -74,11 +74,14 @@ Done!
 - `--tolerance [FLOAT]`: Minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are zero [default: 0.005].
 - `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 1200].
 - `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
-- `--truematrix [STRING]`: Actual correct matrix, for algorithm testing [default: 0].
+- `--truematrix [STRING]`: Actual correct matrix, for testing [default: 0].
+
+**Optional execution options**
+- `--silent`: Doesn't print anything
+- `--output`: Limit the output (files created) to: (image | plots | text_file | all) [default: all]
 
 
 ## Examples
-
 ```shell
 (env) $ python3 psosc.py --infile "data/hou.txt"
 (env) $ python3 psosc.py --infile "data/gawad2.txt" --particles 4 --iterations 500 --k 3 --maxdel 5 --mutfile "data/gawad2_mut.txt"

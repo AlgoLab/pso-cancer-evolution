@@ -6,9 +6,10 @@ import copy
 import ctypes
 from ctypes import *
 
-# for a uniform random tree generation
-used_combinations = []
-probability = [[0,0],[0,0],[0,0]]
+# probabilities
+# probability = [[0,0],[0,0],[0,0]]
+alpha = 0
+beta = 0
 
 class Tree(object):
 
@@ -22,13 +23,18 @@ class Tree(object):
         self.likelihood = float("-inf")
         self.phylogeny = None
 
+
     @classmethod
-    def set_probabilities(cls, alpha, beta):
-        global probability
-        probability[0][0] = math.log(1-beta)
-        probability[1][0] = math.log(beta)
-        probability[0][1] = math.log(alpha)
-        probability[1][1] = math.log(1-alpha)
+    def set_probabilities(cls, a, b):
+        global alpha
+        global beta
+        alpha = a
+        beta = b
+        # global probability
+        # probability[0][0] = math.log(1-beta)
+        # probability[1][0] = math.log(beta)
+        # probability[0][1] = math.log(alpha)
+        # probability[1][1] = math.log(1-alpha)
 
 
     def update_losses_list(self):
@@ -57,17 +63,18 @@ class Tree(object):
     def random(cls, cells, mutations, mutation_names):
         """Generates a random binary tree"""
         root = Node("germline", None, -1, 0)
-        rantree = cls._new_unique_tree(mutations)
+        randtree = [i for i in range(mutations)]
+        numpy.random.shuffle(randtree)
 
         nodes = [root]
         append_node = 0
         i = 0
         while i < mutations:
-            nodes.append(Node(mutation_names[rantree[i]], nodes[append_node], rantree[i]))
+            nodes.append(Node(mutation_names[randtree[i]], nodes[append_node], randtree[i]))
             i += 1
 
             if i < mutations:
-                nodes.append(Node(mutation_names[rantree[i]], nodes[append_node], rantree[i]))
+                nodes.append(Node(mutation_names[randtree[i]], nodes[append_node], randtree[i]))
             append_node += 1
             i += 1
 
@@ -77,49 +84,11 @@ class Tree(object):
 
 
     @classmethod
-    def _new_unique_tree(cls, mutation_names):
-        """
-            Generate a new tree without using combinations of 3, 4 or 5
-            mutations already used in other trees, in order to have the most
-            random uniform generation possible.
-        """
-        global used_combinations
-        valid = False
-        mutations = [i for i in range(mutation_names)]
-        attempts = 0
-
-        while not valid:
-            tree = mutations.copy()
-            numpy.random.shuffle(tree)
-            temp_list = []
-
-            valid = True
-            for length in [3,4]:
-                for i in range (len(tree) - length + 1):
-                    temp = tree[i : i + length]
-                    temp_list.append(temp)
-                    if temp in used_combinations:
-                        valid = False
-
-            if valid:
-                used_combinations += temp_list
-            elif attempts > 20:
-                used_combinations = []
-                attempts = 0
-            attempts += 1
-
-        return tree
-
-
-    @classmethod
-    def empty_combinations(cls):
-        global used_combinations
-        used_combinations = []
-
-
-    @classmethod
-    def greedy_loglikelihood(cls, tree, matrix, cells, mutation_number, alpha, beta):
+    def greedy_loglikelihood(cls, tree, matrix, cells, mutation_number):
         """Gets maximum likelihood of a tree"""
+        global alpha
+        global beta
+
         nodes_list = tree.phylogeny.get_cached_content()
         node_genotypes = [[0 for j in range(mutation_number)] for i in range(len(nodes_list))]
         for i, n in enumerate(nodes_list):
@@ -132,17 +101,17 @@ class Tree(object):
         matrix.flatten()
 
         # converting types for c library
-        alpha = c_double(alpha)
-        beta = c_double(beta)
+        c_alpha = c_double(alpha)
+        c_beta = c_double(beta)
         node_genotypes = node_genotypes.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
         matrix = matrix.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
 
         # calling library
-        lh_lib = CDLL("./lh_test.so")
+        lh_lib = CDLL("./greedy_tree_loglikelihood.so")
         lh_lib.greedy_tree_loglikelihood.argtypes = [POINTER(c_int), POINTER(c_int), c_int, c_int, c_int, c_double, c_double]
         lh_lib.greedy_tree_loglikelihood.restype = c_double
 
-        return lh_lib.greedy_tree_loglikelihood(matrix, node_genotypes, cells, len(nodes_list), mutation_number, alpha, beta)
+        return lh_lib.greedy_tree_loglikelihood(matrix, node_genotypes, cells, len(nodes_list), mutation_number, c_alpha, c_beta)
 
 
     @classmethod
@@ -173,7 +142,7 @@ class Tree(object):
 
 
     @classmethod
-    def greedy_loglikelihood_with_data(cls, tree, matrix, cells, mutation_number, alpha, beta, data):
+    def greedy_loglikelihood_with_data(cls, tree, matrix, cells, mutation_number, data):
         """Gets maximum likelihood of a tree, updating additional info in data"""
         nodes_list = tree.phylogeny.get_cached_content()
         node_genotypes = [
@@ -196,7 +165,7 @@ class Tree(object):
                 values = [0]*5
 
                 for j in range(mutation_number):
-                    p, tmp_values = Tree._prob(matrix[i][j], node_genotypes[n][j], alpha, beta)
+                    p, tmp_values = Tree._prob(matrix[i][j], node_genotypes[n][j])
                     lh += math.log(p)
                     values = [sum(x) for x in zip(values, tmp_values)]
 
@@ -219,7 +188,9 @@ class Tree(object):
 
 
     @classmethod
-    def _prob(cls, I, E, alpha, beta):
+    def _prob(cls, I, E):
+        global alpha
+        global beta
 
         fp = 0 # false positives
         fn = 0 # false negatives
