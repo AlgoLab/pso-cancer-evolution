@@ -11,7 +11,7 @@ Options:
     -v --version                                Shows version.
     -i infile | --infile infile                 Matrix input file.
     -m mutfile | --mutfile mutfile              Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-    -p particles | --particles particles        Number of particles to use for PSO. If not used or zero, it'll be number of CPU cores [default: 0]
+    -p particles | --particles particles        Number of particles to use for PSO. If not used or zero, it'll be 2 * number of CPU cores used [default: 0]
     -c cores | --cores cores                    Number of CPU cores used for the execution. If not used or zero, it'll be half of this computer's CPU cores [default: 0]
     -t iterations | --iterations iterations     Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
     --alpha=<alpha>                             False negative rate [default: 0.15].
@@ -20,7 +20,7 @@ Options:
     --k=<k>                                     K value of Dollo(k) model used as phylogeny tree [default: 3].
     --maxdel=<max_deletions>                    Maximum number of total deletions allowed [default: 5].
     --tolerance=<tolerance>                     Minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are zero [default: 0.005].
-    --maxtime=<maxtime>                         Maximum time (in seconds) of total PSOSC execution [default: 1200].
+    --maxtime=<maxtime>                         Maximum time (in seconds) of total PSOSC execution [default: 1800].
     --truematrix=<truematrix>                   Actual correct matrix, for algorithm testing [default: 0].
     --silent                                    Doesn't print anything
     --output=<output>                           Limit the output (files created) to: (image | plot | text_file | all) [default: all]
@@ -29,8 +29,6 @@ Options:
 
 
 from Helper import Helper
-from Node import Node
-from Operation import Operation as Op
 from Particle import Particle
 from Tree import Tree
 from Data import Data
@@ -44,24 +42,22 @@ import multiprocessing
 
 def main(argv):
     arguments = docopt(__doc__, version = "PSOSC-Cancer-Evolution 2.0")
+    base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
     helper = Helper(arguments)
 
-    base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
     if helper.multiple_runs is None:
-        if not os.path.exists(base_dir):
-            os.makedirs(base_dir)
-        pso(helper).summary(helper, base_dir)
+        data = pso(helper)
+        data.summary(helper, base_dir)
     else:
         runs_data = []
-        for r, particles in enumerate(helper.multiple_runs):
-            print ("\n\n===== Run number %d =====" % r)
-            run_dir = base_dir + "/particles%d_run%d" % (particles, r)
-            if not os.path.exists(run_dir):
-                os.makedirs(run_dir)
-            data = pso(helper, particles)
+        for r, nparticles in enumerate(helper.multiple_runs):
+            print ("\n\n===== Run number %d =====" % (r+1))
+            run_dir = base_dir + "/particles%d_run%d" % (nparticles, (r+1))
+            if not os.path.exists(base_dir):
+                os.makedirs(base_dir)
+            data = pso(helper, nparticles)
             data.summary(helper, run_dir)
             runs_data.append(data)
-            helper.avg_dist = 0
         Data.runs_summary(helper.multiple_runs, runs_data, base_dir)
 
 
@@ -86,7 +82,7 @@ def pso(helper, nparticles=None):
         p.best.likelihood = p.current_tree.likelihood
         if (p.current_tree.likelihood > best.likelihood):
             best = p.current_tree
-            data.starting_likelihood = best.likelihood
+    data.starting_likelihood = best.likelihood
     if helper.truematrix != 0:
         data.starting_likelihood_true = Tree.greedy_loglikelihood(best, helper.truematrix, helper.cells, helper.mutation_number)
 

@@ -1,5 +1,4 @@
 from Node import Node
-from Operation import Operation as Op
 import numpy
 import math
 import copy

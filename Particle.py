@@ -1,10 +1,8 @@
 from Operation import Operation
 from Tree import Tree
-from Operation import Operation as Op
 from Helper import Helper
 from datetime import datetime
 from collections import deque
-import sys
 import time
 import numpy
 import threading
@@ -18,7 +16,7 @@ class Particle(object):
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
         self.silent = silent
         self.best = self.current_tree.copy() # best tree found by this particle
-        self.max_stall_iterations = 750
+        self.max_stall_iterations = 500
         self.best_iteration_likelihoods = []
 
 
@@ -37,7 +35,7 @@ class Particle(object):
         old_lh = ns.best_swarm.likelihood
         improvements = deque([1] * self.max_stall_iterations) # queue
         bm_phase = False
-        exit_local_iterations = 300
+        exit_local_iterations = 0
 
         for it in range(helper.iterations):
             self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
@@ -49,11 +47,11 @@ class Particle(object):
                 old_lh = lh
 
                 # update on screen
-                if not self.silent and it % 25 == 0:
+                if not self.silent and it % 20 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
                 # exit local optimum
-                if exit_local_iterations < -150 and sum(list(improvements)[600:]) < helper.tolerance:
+                if exit_local_iterations < -100 and sum(list(improvements)[400:]) < helper.tolerance:
                     exit_local_iterations = 50
                     ns.attach = False
                 elif exit_local_iterations < 0:
@@ -121,7 +119,7 @@ class Particle(object):
 
         # self movement
         op = numpy.random.choice(ns.operations)
-        Op.tree_operation(self.current_tree, op, helper.k, helper.gamma, helper.max_deletions)
+        Operation.tree_operation(self.current_tree, op, helper.k, helper.gamma, helper.max_deletions)
         self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
         # updating log likelihood and bests

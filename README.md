@@ -59,30 +59,33 @@ Done!
 
 ## Usage
 **Required input parameters**
-- `--infile [STRING]`: Matrix input file
+- `--infile (shortcut: -i) [STRING]`: Matrix input file
 
 **Optional input parameters**
-- `--mutfile [STRING]`: Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-- `--particles [INT]`: Number of particles to use for PSO. If not used or zero, it'll be number of CPU cores used [default: 0]
-- `--cores [INT]`: Number of CPU cores used for the execution. If not used or zero, it'll be half of this computer's CPU cores [default: 0]
-- `--iterations [INT]`: Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
+- `--mutfile (shortcut: -m) [STRING]`: Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
+- `--particles (shortcut: -p) [INT]`: Number of particles to use for PSO. If not used or zero, it'll be 2 * number of CPU cores used [default: 0]
+- `--cores (shortcut: -c) [INT]`: Number of CPU cores used for the execution. If not used or zero, it'll be half of this computer's CPU cores [default: 0]
+- `--iterations (shortcut: -t) [INT]`: Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
 - `--alpha [FLOAT]`: False negative rate [default: 0.15].
 - `--beta [FLOAT]`: False positive rate [default: 0.00001].
 - `--gamma [FLOAT/STRING]`: Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
 - `--k [INT]`: K value of Dollo(k) model used as phylogeny tree [default: 3].
 - `--maxdel [INT]`: Maximum number of total deletions allowed [default: 5].
 - `--tolerance [FLOAT]`: Minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are zero [default: 0.005].
-- `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 1200].
+- `--maxtime [INT]`: Maximum time (in seconds) of total PSO execution [default: 1800].
 - `--multiple [LIST(INT)]`: Multiple runs of the program, with the different number of particles given in input (integers separated by spaces) [default: None].
 - `--truematrix [STRING]`: Actual correct matrix, for testing [default: 0].
 
 **Optional execution options**
+- `--help (shortcut: -h)`: shows parameters and options
+- `--version (shortcut: -v)`: shows software version
 - `--silent`: Doesn't print anything
-- `--output`: Limit the output (files created) to: (image | plots | text_file | all) [default: all]
+- `--output [STRING]`: Limit the output (files created) to: (image | plot | text_file | all) [default: all]
 
 
 ## Examples
 ```shell
+(env) $ python3 psosc.py --help
 (env) $ python3 psosc.py --infile "data/hou.txt"
 (env) $ python3 psosc.py --infile "data/gawad2.txt" --particles 4 --iterations 500 --k 3 --maxdel 5 --mutfile "data/gawad2_mut.txt"
 (env) $ python3 psosc.py -i "data/gawad2.txt" -p 4 -t 500 -m "data/gawad2_mut.txt"

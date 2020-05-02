@@ -1,7 +1,5 @@
 import io
-import sys
 import numpy
-from Data import Data
 import multiprocessing as mp
 
 
@@ -63,7 +61,7 @@ def setup_arguments(arguments):
         raise Exception("Error! Particles < 0")
     if cores < 0:
         raise Exception("Error! Cores < 0")
-    if (multiple_runs and any(cores > particles for particles in multiple_runs)) or (not(multiple_runs) and cores > particles):
+    if particles > 0 and ((multiple_runs and any(cores > particles for particles in multiple_runs)) or (not(multiple_runs) and cores > particles)):
         raise Exception("Error! Cores cannot be more than particles")
     if cores > mp.cpu_count():
         raise Exception("Error! Cores in input are more than this computer's cores")
@@ -100,9 +98,9 @@ def setup_arguments(arguments):
     if cores == 0:
         cores = int(mp.cpu_count() / 2)
 
-    # default number of particles = number of CPU cores used
+    # default number of particles = 2 * number of CPU cores used
     if particles == 0:
-        particles = cores
+        particles = 2 * cores
 
     mutation_names = _read_mutation_names(arguments['--mutfile'], mutation_number)
     gamma = _read_gamma(arguments['--gamma'], mutation_number)

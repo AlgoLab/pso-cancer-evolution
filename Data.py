@@ -1,7 +1,6 @@
 from Tree import Tree
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-import sys
 import os
 import numpy
 
@@ -53,6 +52,9 @@ class Data(object):
             Creates a text file with the data of the execution, an image of the
             best tree found, a plot of the likelihood over time
         """
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
         self.calculate_relative_data(helper, helper.matrix)
 
         # tree [image]
