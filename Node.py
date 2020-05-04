@@ -2,6 +2,7 @@ from ete3 import Tree
 from graphviz import Source
 import numpy
 import json
+import math
 
 class Node(Tree):
 
@@ -102,37 +103,7 @@ class Node(Tree):
         self.up.get_genotype_profile(genotypes)
 
 
-    def distance(self, tree, mutation_number):
-        """
-            Calculate distance between this tree and another tree (parameter).
-            It is a relative distance: 1 if they're the same, 0 if they're
-            totally different. It is obtained comparing the genotype profiles
-            of the two trees.
-        """
-        genotypes1 = {}
-        for n in self.traverse():
-            if not n.loss:
-                tmp = [0 for j in range(mutation_number)]
-                n.get_genotype_profile(tmp)
-                genotypes1[n.mutation_id] = tmp
-
-        genotypes2 = {}
-        for n in tree.traverse():
-            if not n.loss:
-                tmp = [0 for j in range(mutation_number)]
-                n.get_genotype_profile(tmp)
-                genotypes2[n.mutation_id] = tmp
-
-        equal = 0
-        for n in self.traverse():
-            equal += numpy.sum(genotypes1[n.mutation_id] == genotypes2[n.mutation_id])
-
-        total = len(genotypes1.values())
-        dist = 1 - equal / total
-        return dist
-
-
-    def get_clade_by_distance(self, avg_dist, distance):
+    def get_clade_by_distance(self, max_dist, distance):
         """
             Choose a clade, from this tree, that will be attached in another
             tree. It's chosen either randomly or after calculating the
@@ -142,22 +113,19 @@ class Node(Tree):
         """
         nodes = self.get_clades()
 
-        if numpy.random.uniform() < 0.5:
-            # calculating and re-scaling difference from [-1,1] to [0,1]
-            diff = 10 * (distance - avg_dist)
-            if diff > 1:
-                diff = 1
-            elif diff < -1:
-                diff = -1
-            diff = (diff+1)/2
+        if numpy.random.uniform() < 0.8:
 
             max_h = self.get_height()
-            level = int(diff * (max_h - 2)) + 1
+            perc = (distance/max_dist)
+            if perc > 1:
+                perc = 1
+            level = math.ceil(perc*(max_h-1))
 
             numpy.random.shuffle(nodes)
             for n in nodes:
                 if n.get_height() == level:
                     return n
+
         else:
             return numpy.random.choice(nodes)
 

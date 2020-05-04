@@ -5,8 +5,6 @@ import copy
 import ctypes
 from ctypes import *
 
-# probabilities
-# probability = [[0,0],[0,0],[0,0]]
 alpha = 0
 beta = 0
 
@@ -29,11 +27,6 @@ class Tree(object):
         global beta
         alpha = a
         beta = b
-        # global probability
-        # probability[0][0] = math.log(1-beta)
-        # probability[1][0] = math.log(beta)
-        # probability[0][1] = math.log(alpha)
-        # probability[1][1] = math.log(1-alpha)
 
 
     def update_losses_list(self):
@@ -99,45 +92,21 @@ class Tree(object):
         matrix = numpy.matrix(matrix, dtype=numpy.int32)
         matrix.flatten()
 
+
+
         # converting types for c library
-        c_alpha = c_double(alpha)
+        ttt = numpy.array(alpha)
+        c_alpha = ttt.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
         c_beta = c_double(beta)
         node_genotypes = node_genotypes.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
         matrix = matrix.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
 
         # calling library
         lh_lib = CDLL("./greedy_tree_loglikelihood.so")
-        lh_lib.greedy_tree_loglikelihood.argtypes = [POINTER(c_int), POINTER(c_int), c_int, c_int, c_int, c_double, c_double]
+        lh_lib.greedy_tree_loglikelihood.argtypes = [POINTER(c_int), POINTER(c_int), c_int, c_int, c_int, POINTER(c_double), c_double]
         lh_lib.greedy_tree_loglikelihood.restype = c_double
 
         return lh_lib.greedy_tree_loglikelihood(matrix, node_genotypes, cells, len(nodes_list), mutation_number, c_alpha, c_beta)
-
-
-    @classmethod
-    def greedy_loglikelihood_slow(cls, tree, matrix, cells, mutation_number):
-        """Gets maximum likelihood of a tree"""
-        global probability
-
-        nodes_list = tree.phylogeny.get_cached_content()
-        node_genotypes = [[0 for j in range(mutation_number)] for i in range(len(nodes_list))]
-        for i, n in enumerate(nodes_list):
-            n.get_genotype_profile(node_genotypes[i])
-        node_genotypes = [list(map(int, x)) for x in node_genotypes]
-
-        maximum_likelihood = 0
-
-        for i in range(cells):
-            best_lh = float("-inf")
-
-            for n in range(len(nodes_list)):
-                lh = sum([probability[matrix[i][j]][node_genotypes[n][j]] for j in range(mutation_number)])
-
-                if lh > best_lh:
-                    best_lh = lh
-
-            maximum_likelihood += best_lh
-
-        return maximum_likelihood
 
 
     @classmethod
@@ -164,7 +133,7 @@ class Tree(object):
                 values = [0]*5
 
                 for j in range(mutation_number):
-                    p, tmp_values = Tree._prob(matrix[i][j], node_genotypes[n][j])
+                    p, tmp_values = Tree._prob(matrix[i][j], node_genotypes[n][j], j)
                     lh += math.log(p)
                     values = [sum(x) for x in zip(values, tmp_values)]
 
@@ -187,7 +156,7 @@ class Tree(object):
 
 
     @classmethod
-    def _prob(cls, I, E):
+    def _prob(cls, I, E, j):
         global alpha
         global beta
 
@@ -204,7 +173,7 @@ class Tree(object):
                 p = 1 - beta
             elif E == 1:
                 fn += 1
-                p = alpha
+                p = alpha[j]
             else:
                 raise SystemError("Unknown value for E: %d" % E)
         elif I == 1:
@@ -213,7 +182,7 @@ class Tree(object):
                 p = beta
             elif E == 1:
                 tp += 1
-                p = 1 - alpha
+                p = 1 - alpha[j]
             else:
                 raise SystemError("Unknown value for E: %d" % E)
         elif I == 2:

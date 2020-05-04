@@ -83,7 +83,7 @@ class Data(object):
             f.write(">> True positives:       %d\t(%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 1))))
             f.write(">> Added missing values: %d\t(%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 1))))
             f.write("\n---------------------------------\n")
-            if helper.truematrix != 0:
+            if helper.truematrix != None:
                 lh = self.calculate_relative_data(helper, helper.truematrix)
                 f.write("\n[Actual correct matrix]\n")
                 f.write(">> Starting lh = %f\n" % (self.starting_likelihood_true))

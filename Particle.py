@@ -11,10 +11,10 @@ import threading
 class Particle(object):
 
 
-    def __init__(self, cells, mutation_number, mutation_names, number, silent):
+    def __init__(self, cells, mutation_number, mutation_names, number, quiet):
         self.number = number
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
-        self.silent = silent
+        self.quiet = quiet
         self.best = self.current_tree.copy() # best tree found by this particle
         self.max_stall_iterations = 500
         self.best_iteration_likelihoods = []
@@ -47,8 +47,9 @@ class Particle(object):
                 old_lh = lh
 
                 # update on screen
-                if not self.silent and it % 20 == 0:
+                if not self.quiet and it % 20 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
+
 
                 # exit local optimum
                 if exit_local_iterations < -100 and sum(list(improvements)[400:]) < helper.tolerance:
@@ -95,15 +96,15 @@ class Particle(object):
         """The particle makes 3 movements and update the results"""
 
         # calculating distances
-        particle_distance = self.current_tree.phylogeny.distance(self.best.phylogeny, helper.mutation_number)
-        swarm_distance = self.current_tree.phylogeny.distance(best_swarm.phylogeny, helper.mutation_number)
+        particle_distance = 1 -  self.best.likelihood / self.current_tree.likelihood
+        swarm_distance = 1 -  best_swarm.likelihood / self.current_tree.likelihood
         it_dist = (particle_distance + swarm_distance) / 2
 
         if ns.attach:
 
             # movement to particle best
             if particle_distance != 0:
-                clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(ns.avg_dist, particle_distance)
+                clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(ns.max_dist, particle_distance)
                 clade_to_be_attached = clade_to_be_attached.copy().detach()
                 clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
                 clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
@@ -111,7 +112,7 @@ class Particle(object):
 
             # movement to swarm best
             if swarm_distance != 0:
-                clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(ns.avg_dist, swarm_distance)
+                clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(ns.max_dist, swarm_distance)
                 clade_to_be_attached = clade_to_be_attached.copy().detach()
                 clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
                 clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
@@ -137,7 +138,8 @@ class Particle(object):
         if lh > ns.best_swarm.likelihood:
             ns.best_swarm = self.current_tree.copy()
 
-        # update average distance
-        ns.avg_dist = (ns.avg_dist * it + it_dist) / (it + 1)
+        # update max distance
+        if max(particle_distance, swarm_distance) > ns.max_dist:
+            ns.max_dist = max(particle_distance, swarm_distance)
 
         lock.release()

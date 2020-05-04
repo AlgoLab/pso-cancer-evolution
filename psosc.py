@@ -2,28 +2,28 @@
 Particle Swarm Optimization Single Cell inference
 
 Usage:
-    psosc.py (--infile <infile>) [--particles <particles>] [--cores <cores>] [--iterations <iterations>] [--alpha=<alpha>] [--beta=<beta>] [--gamma=<gamma>] [--k=<k>] [--maxdel=<max_deletions>] [--mutfile <mutfile>] [--tolerance=<tolerance>] [--maxtime=<maxtime>] [--multiple <runptcl>...] [--truematrix=<truematrix>] [--silent] [--output=<output>]
+    psosc.py (-i infile) (-p particles) (-c cores) (-k k) (-a alpha) (-b beta)
+        [-g gamma] [-t iterations] [-d max_deletions] [-e mutfile] [-T tolerance] [-m maxtime] [-I truematrix] [-M runptcl] [--quiet] [--output output]
     psosc.py -h | --help
     psosc.py -v | --version
 
 Options:
-    -h --help                                   Shows this screen.
-    -v --version                                Shows version.
-    -i infile | --infile infile                 Matrix input file.
-    -m mutfile | --mutfile mutfile              Path of the mutation names. If not used, then the mutations will be named progressively from 1 to mutations.
-    -p particles | --particles particles        Number of particles to use for PSO. If not used or zero, it'll be 2 * number of CPU cores used [default: 0]
-    -c cores | --cores cores                    Number of CPU cores used for the execution. If not used or zero, it'll be half of this computer's CPU cores [default: 0]
-    -t iterations | --iterations iterations     Number of iterations. If not used or zero, PSO will stop when stuck on a best fitness value (or after maxtime of total execution) [default: 0].
-    --alpha=<alpha>                             False negative rate [default: 0.15].
-    --beta=<beta>                               False positive rate [default: 0.00001].
-    --gamma=<gamma>                             Loss rate for each mutation (single float for every mutations or file with different rates) [default: 1].
-    --k=<k>                                     K value of Dollo(k) model used as phylogeny tree [default: 3].
-    --maxdel=<max_deletions>                    Maximum number of total deletions allowed [default: 5].
-    --tolerance=<tolerance>                     Minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are zero [default: 0.005].
-    --maxtime=<maxtime>                         Maximum time (in seconds) of total PSOSC execution [default: 1800].
-    --truematrix=<truematrix>                   Actual correct matrix, for algorithm testing [default: 0].
-    --silent                                    Doesn't print anything
-    --output=<output>                           Limit the output (files created) to: (image | plot | text_file | all) [default: all]
+    -i infile                       Matrix input file.
+    -p particles                    Number of particles to use for PSO.
+    -c cores                        Number of CPU cores used for the execution.
+    -k k                            K value of Dollo(k) model used as phylogeny tree.
+    -a alpha                        False negative rate in input file or path of the file containing different FN rates for each mutations.
+    -b beta                         False positive rate.
+    -g gamma                        Loss rate in input file or path of the file containing different GAMMA rates for each mutations [default: 1].
+    -t iterations                   Number of iterations (-m argument will be ignored; not used by default).
+    -d max_deletions                Maximum number of total deletions allowed [default: +inf].
+    -e mutfile                      Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations (not used by default).
+    -T tolerance                    Tolerance, minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are not used [default: 0.005].
+    -m maxtime                      Maximum time (in seconds) of total PSOSC execution [default: 1800].
+    -I truematrix                   Actual correct matrix, for algorithm testing (not used by default).
+    -M runptcl                      Multiple run of the software, with different number of particles, separated by commas (-p argument will be ignored; not used by default).
+    --quiet                         Doesn't print anything (not used by default).
+    --output output                 Limit the output (files created) to: (image | plot | text_file | all) [default: all].
 
 """
 
@@ -63,7 +63,7 @@ def main(argv):
 
 def pso(helper, nparticles=None):
 
-    if not helper.silent:
+    if not helper.quiet:
         print("\n • PARTICLES START-UP")
 
     Tree.set_probabilities(helper.alpha, helper.beta)
@@ -74,7 +74,7 @@ def pso(helper, nparticles=None):
     data.pso_start = time.time()
 
     # create particles
-    particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, helper.silent) for n in range(helper.nparticles)]
+    particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, helper.quiet) for n in range(helper.nparticles)]
     best = particles[0].current_tree
     best.likelihood = float("-inf")
     for p in particles:
@@ -83,7 +83,7 @@ def pso(helper, nparticles=None):
         if (p.current_tree.likelihood > best.likelihood):
             best = p.current_tree
     data.starting_likelihood = best.likelihood
-    if helper.truematrix != 0:
+    if helper.truematrix != None:
         data.starting_likelihood_true = Tree.greedy_loglikelihood(best, helper.truematrix, helper.cells, helper.mutation_number)
 
     # creating shared memory between processes
@@ -99,6 +99,7 @@ def pso(helper, nparticles=None):
     ns.operations = [2,3]
     ns.attach = True
     ns.avg_dist = 0
+    ns.max_dist = 0.1
 
     # selecting particles to assign to processes
     assigned_particles = []
@@ -107,7 +108,7 @@ def pso(helper, nparticles=None):
     for i in range(helper.nparticles):
         assigned_particles[i%helper.cores].append(particles[i])
 
-    if not helper.silent:
+    if not helper.quiet:
         print("\n • PSO RUNNING...")
         print("\t  Time\t\t Best likelihood so far")
 
@@ -126,7 +127,7 @@ def pso(helper, nparticles=None):
 
     data.pso_end = time.time()
 
-    if not helper.silent:
+    if not helper.quiet:
         print("\n • FINAL RESULTS")
         print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.get_total_time(), 2))))
         print("\t- best likelihood: %s\n" % str(round(data.best.likelihood, 2)))
