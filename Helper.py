@@ -8,12 +8,11 @@ class Helper(object):
 
     def __init__(self, arguments):
 
-        (filename, nparticles, cores, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta,
+        (filename, n_particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta,
             gamma, k, max_deletions, tolerance, max_time, multiple_runs, quiet, output, automatic_stop) = setup_arguments(arguments)
 
-        # psosc arguments
         self.filename = filename
-        self.nparticles = nparticles
+        self.n_particles = n_particles
         self.cores = cores
         self.iterations = iterations
         self.matrix = matrix
@@ -37,11 +36,23 @@ class Helper(object):
 def setup_arguments(arguments):
     """Check arguments for errors and returns them ready for execution"""
 
-    # print(arguments)
+    # particles
+    n_particles = [int(i) for i in arguments['-p'].split(',')]
+    if len(n_particles) == 1:
+        n_particles = n_particles[0]
+        if n_particles < 2:
+            raise Exception("Error! n_particles < 2")
 
-    # get the arguments
-    particles = int(arguments['-p'])
+    # cores
     cores = int(arguments['-c'])
+    if cores < 1:
+        raise Exception("Error! Cores < 1")
+    if cores > mp.cpu_count():
+        raise Exception("Error! Cores in input are more than this computer's cores")
+    if (multiple_runs and any(cores > p for p in n_particles)) or (not(multiple_runs) and cores > n_particles):
+        raise Exception("Error! Cores cannot be more than particles")
+
+    # iterations
     iterations = (arguments['-t'])
     automatic_stop = False
     if iterations == None:
@@ -49,43 +60,10 @@ def setup_arguments(arguments):
         iterations = 100000
     else:
         iterations = int(iterations)
-    beta = float(arguments['-b'])
-    k = int(arguments['-k'])
-    max_deletions = float(arguments['-d'])
-    if max_deletions != float("+inf"):
-        max_deletions = int(max_deletions)
-    tolerance = float(arguments['-T'])
-    max_time = int(arguments['-m'])
-    if arguments['-M'] != None:
-        multiple_runs = [int(i) for i in arguments['-M'].split(',')]
-    else:
-        multiple_runs = None
-    quiet = arguments['--quiet']
-    output = arguments['--output']
-
-    # check for errors
-    if particles < 2:
-        raise Exception("Error! Particles < 2")
-    if cores < 1:
-        raise Exception("Error! Cores < 1")
-    if (multiple_runs and any(cores > particles for particles in multiple_runs)) or (not(multiple_runs) and cores > particles):
-        raise Exception("Error! Cores cannot be more than particles")
-    if cores > mp.cpu_count():
-        raise Exception("Error! Cores in input are more than this computer's cores")
     if iterations < 1:
         raise Exception("Error! Iterations < 1")
-    if k < 0:
-        raise Exception("Error! K < 0")
-    if max_deletions < 0:
-        raise Exception("Error! Maxdel < 0")
-    if tolerance < 0 or tolerance > 1:
-        raise Exception("Error! Tolerance is not between 0 and 1")
-    if max_time < 10:
-        raise Exception("Error! Minimum time limit is 10 seconds")
-    if output not in ["image", "plot", "text_file", "all"]:
-        raise Exception("Error! Output must be either one of these: (image | plot | text_file | all)")
 
-    # read matrix
+    # matrix
     filename = arguments['-i']
     with open(filename, 'r') as f:
         matrix =  numpy.atleast_2d(numpy.loadtxt(io.StringIO(f.read())))
@@ -93,11 +71,7 @@ def setup_arguments(arguments):
     cells = matrix.shape[0]
     matrix = [list(map(int, x)) for x in matrix.tolist()] #convert matrix to int
 
-    alpha = _read_gamma(arguments['-a'], mutation_number, "alpha")
-    gamma = _read_gamma(arguments['-g'], mutation_number, "gamma")
-    mutation_names = _read_mutation_names(arguments['-e'], mutation_number)
-
-    # read truematrix if given in input
+    # truematrix
     if arguments['-I'] == None:
         truematrix = None
     else:
@@ -105,9 +79,48 @@ def setup_arguments(arguments):
             truematrix =  numpy.atleast_2d(numpy.loadtxt(io.StringIO(f.read())))
         truematrix = [list(map(int, x)) for x in truematrix.tolist()] #convert matrix to int
 
-    max_time -= 0.5
+    # mutation names
+    mutation_names = _read_mutation_names(arguments['-e'], mutation_number)
 
-    return (filename, particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names,
+    # alpha, beta, gamma
+    alpha = _read_gamma(arguments['-a'], mutation_number, "alpha")
+    beta = float(arguments['-b'])
+    gamma = _read_gamma(arguments['-g'], mutation_number, "gamma")
+
+    # k
+    k = int(arguments['-k'])
+    if k < 0:
+        raise Exception("Error! K < 0")
+
+    # max deletions
+    max_deletions = float(arguments['-d'])
+    if max_deletions != float("+inf"):
+        max_deletions = int(max_deletions)
+    if max_deletions < 0:
+        raise Exception("Error! Maxdel < 0")
+
+    # tolerance
+    tolerance = float(arguments['-T'])
+    if tolerance < 0 or tolerance > 1:
+        raise Exception("Error! Tolerance is not between 0 and 1")
+
+    # maximum time
+    max_time = arguments['-m']
+    if max_time == None:
+        max_time = float("+inf")
+    else:
+        max_time = int(max_time)
+    if max_time < 5:
+        raise Exception("Error! Minimum time limit is 5 seconds")
+    max_time *= 0.999
+
+    # execution options
+    quiet = arguments['--quiet']
+    output = arguments['--output']
+    if output not in ["image", "plot", "text_file", "all"]:
+        raise Exception("Error! Output must be either one of these: (image | plot | text_file | all)")
+
+    return (filename, n_particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names,
         cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs, quiet, output, automatic_stop)
 
 

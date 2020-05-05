@@ -3,13 +3,13 @@ Particle Swarm Optimization Single Cell inference
 
 Usage:
     psosc.py (-i infile) (-p particles) (-c cores) (-k k) (-a alpha) (-b beta)
-        [-g gamma] [-t iterations] [-d max_deletions] [-e mutfile] [-T tolerance] [-m maxtime] [-I truematrix] [-M runptcl] [--quiet] [--output output]
+        [-g gamma] [-t iterations] [-d max_deletions] [-e mutfile] [-T tolerance] [-m maxtime] [-I truematrix] [--quiet] [--output output]
     psosc.py -h | --help
     psosc.py -v | --version
 
 Options:
     -i infile                       Matrix input file.
-    -p particles                    Number of particles to use for PSO.
+    -p particles                    Number of particles to use for PSO (single or multiple values, separated by commas, for a multiple run).
     -c cores                        Number of CPU cores used for the execution.
     -k k                            K value of Dollo(k) model used as phylogeny tree.
     -a alpha                        False negative rate in input file or path of the file containing different FN rates for each mutations.
@@ -19,9 +19,8 @@ Options:
     -d max_deletions                Maximum number of total deletions allowed [default: +inf].
     -e mutfile                      Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations (not used by default).
     -T tolerance                    Tolerance, minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are not used [default: 0.005].
-    -m maxtime                      Maximum time (in seconds) of total PSOSC execution [default: 1800].
+    -m maxtime                      Maximum time (in seconds) of total PSOSC execution (not used by default).
     -I truematrix                   Actual correct matrix, for algorithm testing (not used by default).
-    -M runptcl                      Multiple run of the software, with different number of particles, separated by commas (-p argument will be ignored; not used by default).
     --quiet                         Doesn't print anything (not used by default).
     --output output                 Limit the output (files created) to: (image | plot | text_file | all) [default: all].
 
@@ -45,36 +44,37 @@ def main(argv):
     base_dir = "results" + datetime.now().strftime("%Y%m%d%H%M%S")
     helper = Helper(arguments)
 
-    if helper.multiple_runs is None:
-        data = pso(helper)
-        data.summary(helper, base_dir)
-    else:
+    if helper.multiple_runs:
         runs_data = []
-        for r, nparticles in enumerate(helper.multiple_runs):
-            print ("\n\n===== Run number %d =====" % (r+1))
-            run_dir = base_dir + "/particles%d_run%d" % (nparticles, (r+1))
+        for r, n_particles in enumerate(helper.n_particles):
+            print ("\n\n======= Run number %d =======" % (r+1))
+            run_dir = base_dir + "/particles%d_run%d" % (n_particles, (r+1))
             if not os.path.exists(base_dir):
                 os.makedirs(base_dir)
-            data = pso(helper, nparticles)
+            data = pso(helper, n_particles)
             data.summary(helper, run_dir)
             runs_data.append(data)
-        Data.runs_summary(helper.multiple_runs, runs_data, base_dir)
+        Data.runs_summary(helper.n_particles, runs_data, base_dir)
+    else:
+        data = pso(helper)
+        data.summary(helper, base_dir)
 
 
-def pso(helper, nparticles=None):
+def pso(helper, n_particles=None):
 
     if not helper.quiet:
         print("\n • PARTICLES START-UP")
 
     Tree.set_probabilities(helper.alpha, helper.beta)
 
-    if nparticles != None:
-        helper.nparticles = nparticles
-    data = Data(helper.filename, helper.nparticles, helper.output)
+    if n_particles == None:
+         n_particles = helper.n_particles
+     # print(n_particles)
+    data = Data(helper.filename, n_particles, helper.output)
     data.pso_start = time.time()
 
     # create particles
-    particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, helper.quiet) for n in range(helper.nparticles)]
+    particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, helper.quiet) for n in range(n_particles)]
     best = particles[0].current_tree
     best.likelihood = float("-inf")
     for p in particles:
@@ -98,14 +98,13 @@ def pso(helper, nparticles=None):
     ns.stop = False
     ns.operations = [2,3]
     ns.attach = True
-    ns.avg_dist = 0
     ns.max_dist = 0.1
 
     # selecting particles to assign to processes
     assigned_particles = []
     for i in range(helper.cores):
         assigned_particles.append([])
-    for i in range(helper.nparticles):
+    for i in range(n_particles):
         assigned_particles[i%helper.cores].append(particles[i])
 
     if not helper.quiet:
@@ -129,7 +128,7 @@ def pso(helper, nparticles=None):
 
     if not helper.quiet:
         print("\n • FINAL RESULTS")
-        print("\t- time to complete pso with %d particles: %s seconds" % (data.nofparticles, str(round(data.get_total_time(), 2))))
+        print("\t- time to complete pso with %d particles: %s seconds" % (data.n_particles, str(round(data.get_total_time(), 2))))
         print("\t- best likelihood: %s\n" % str(round(data.best.likelihood, 2)))
 
     return data

@@ -50,10 +50,9 @@ class Particle(object):
                 if not self.quiet and it % 20 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
-
                 # exit local optimum
-                if exit_local_iterations < -100 and sum(list(improvements)[400:]) < helper.tolerance:
-                    exit_local_iterations = 50
+                if exit_local_iterations < -100 and sum(list(improvements)[350:]) < helper.tolerance:
+                    exit_local_iterations = 25
                     ns.attach = False
                 elif exit_local_iterations < 0:
                     ns.attach = True
@@ -79,15 +78,15 @@ class Particle(object):
             ns.best_iteration_likelihoods = self.best_iteration_likelihoods
         lock.acquire()
         tmp = ns.iterations_performed
-        tmp[self.number] = it+1
+        tmp[self.number] = it + 1
         ns.iterations_performed = tmp
         lock.release()
 
 
     def start_backmutations(self, elapsed_time, max_time, automatic_stop, it, iterations, improvements, tolerance):
         """Check if it's time to start adding backmutations"""
-        b1 = elapsed_time >= (3/4)*max_time
-        b2 = not(automatic_stop) and it >= (3/4)*iterations
+        b1 = elapsed_time >= (3/4) * max_time
+        b2 = not(automatic_stop) and it >= (3/4) * iterations
         b3 = automatic_stop and sum(improvements) < tolerance
         return (b1 or b2 or b3)
 
@@ -98,7 +97,7 @@ class Particle(object):
         # calculating distances
         particle_distance = 1 -  self.best.likelihood / self.current_tree.likelihood
         swarm_distance = 1 -  best_swarm.likelihood / self.current_tree.likelihood
-        it_dist = (particle_distance + swarm_distance) / 2
+        iteration_dist = max(particle_distance, swarm_distance)
 
         if ns.attach:
 
@@ -139,7 +138,7 @@ class Particle(object):
             ns.best_swarm = self.current_tree.copy()
 
         # update max distance
-        if max(particle_distance, swarm_distance) > ns.max_dist:
-            ns.max_dist = max(particle_distance, swarm_distance)
+        if iteration_dist > ns.max_dist:
+            ns.max_dist = iteration_dist
 
         lock.release()

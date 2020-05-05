@@ -92,11 +92,8 @@ class Tree(object):
         matrix = numpy.matrix(matrix, dtype=numpy.int32)
         matrix.flatten()
 
-
-
         # converting types for c library
-        ttt = numpy.array(alpha)
-        c_alpha = ttt.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        c_alpha = numpy.array(alpha).ctypes.data_as(ctypes.POINTER(ctypes.c_double))
         c_beta = c_double(beta)
         node_genotypes = node_genotypes.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
         matrix = matrix.ctypes.data_as(ctypes.POINTER(ctypes.c_int))

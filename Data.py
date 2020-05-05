@@ -8,13 +8,13 @@ import numpy
 class Data(object):
 
 
-    def __init__(self, filename, nofparticles, output):
+    def __init__(self, filename, n_particles, output):
         self.filename = filename[filename.rfind('/')+1:]
         self.pso_start = 0
         self.pso_end = 0
         self.starting_likelihood = 0
-        self.nofparticles = nofparticles
-        self.iterations_performed = [0] * nofparticles
+        self.n_particles = n_particles
+        self.iterations_performed = [0] * n_particles
         self.best_iteration_likelihoods = []
         self.true_positives = 0
         self.true_negatives = 0
@@ -26,7 +26,6 @@ class Data(object):
         self.false_negatives_relative = 0
         self.false_positives_relative = 0
         self.missing_values_relative = 0
-        self.mem_over_time = []
         self.output = output
         self.best = None
 
@@ -95,9 +94,9 @@ class Data(object):
                 f.write(">> Added missing values: %d\t(%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 1))))
                 f.write("\n---------------------------------\n")
             f.write("\n>> Number of cores: %d\n" % helper.cores)
-            f.write(">> Number of particles: %d\n" % self.nofparticles)
+            f.write(">> Number of particles: %d\n" % self.n_particles)
             f.write(">> Number of iterations for each particle:\n")
-            for i in range(self.nofparticles):
+            for i in range(self.n_particles):
                 f.write("\t- particle %d: %d\n" % (i, self.iterations_performed[i]))
             f.write("\n>> Number of cells: %d\n" % helper.cells)
             f.write(">> Number of mutations: %d\n" % helper.mutation_number)
@@ -111,7 +110,7 @@ class Data(object):
 
 
     @classmethod
-    def runs_summary(cls, runs, runs_data, dir):
+    def runs_summary(cls, n_particles, runs_data, dir):
         """Creates the summary for each run and a plot"""
         likelihoods = []
         for data in runs_data:
@@ -123,7 +122,7 @@ class Data(object):
         plt.xlabel("Number of particles")
         plt.ylabel("Log Likelihood")
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        plt.plot(runs, likelihoods)
+        plt.plot(n_particles, likelihoods)
         plt.savefig(dir + "/likelihood.pdf")
 
         # info text file
@@ -133,7 +132,7 @@ class Data(object):
         f.write("\tParticles & Iterations & Starting Likelihood & Final Likelihood & CPU Time (s)\\\\\n")
         f.write("\t\\hline\\hline\n")
         for data in runs_data:
-            nofp = str(data.nofparticles)
+            nofp = str(data.n_particles)
             if min(data.iterations_performed) == max(data.iterations_performed):
                 its = str(data.iterations_performed[0])
             else:

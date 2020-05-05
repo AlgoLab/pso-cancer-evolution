@@ -60,7 +60,7 @@ Done!
 ## Usage
 **Required input parameters**
 - `-i [STRING]`: Matrix input file
-- `-p [INT]`: Number of particles to use for PSO.
+- `-p [INT]`: Number of particles to use for PSO (single or multiple values, separated by commas, for a multiple run).
 - `-c [INT]`: Number of CPU cores used for the execution.
 - `-k [INT]`: K value of Dollo(k) model used as phylogeny tree.
 - `-a [FLOAT/STRING]`: False negative rate in input file or path of the file containing different FN rates for each mutations.
@@ -74,16 +74,16 @@ Done!
 - `-T [FLOAT]`: Tolerance, minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are not used [default: 0.005].
 - `-m [INT]`: Maximum time (in seconds) of total PSO execution [default: 1800].
 - `-I [STRING]`: Actual correct matrix, for testing (not used by default).
-- `-M [LIST(INT)]`: Multiple run of the software, with different number of particles, separated by commas (-p argument will be ignored; not used by default).
 
 **Optional execution options**
 - `--quiet`: Doesn't print anything (not used by default).
 - `--output [STRING]`: Limit the output (files created) to: (image | plot | text_file | all) [default: all]
 
 
-## Example
+## Examples
 ```shell
 (env) $ python3 psosc.py -i "data/gawad2.txt" -p 4 -c 2 -k 3 -a 0.15 -b 0.00001 -d 5 -e "data/gawad2_mut.txt"
+(env) $ python3 psosc.py -i "./data/simulated/exp1/sim_1_scs.txt" -p 10,20,50 -c 4 -k 3 -a 0.25 -b 0.00001 -I "./data/simulated/exp1/sim_1_truescs.txt" -m 600
 ```
 
 
