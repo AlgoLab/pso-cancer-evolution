@@ -17,8 +17,8 @@ Options:
     -g gamma                        Loss rate in input file or path of the file containing different GAMMA rates for each mutations [default: 1].
     -t iterations                   Number of iterations (-m argument will be ignored; not used by default).
     -d max_deletions                Maximum number of total deletions allowed [default: +inf].
-    -e mutfile                      Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations (not used by default).
-    -T tolerance                    Tolerance, minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are not used [default: 0.005].
+    -e mutfile                      Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations.
+    -T tolerance                    Tolerance, minimum relative improvement (between 0 and 1) in the last iterations in order to keep going, if iterations are not used [default: 0.005].
     -m maxtime                      Maximum time (in seconds) of total PSOSC execution (not used by default).
     -I truematrix                   Actual correct matrix, for algorithm testing (not used by default).
     --quiet                         Doesn't print anything (not used by default).
@@ -61,7 +61,6 @@ def main(argv):
 
 
 def pso(helper, n_particles=None):
-
     if not helper.quiet:
         print("\n • PARTICLES START-UP")
 
@@ -74,7 +73,10 @@ def pso(helper, n_particles=None):
     data.pso_start = time.time()
 
     # create particles
-    particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, helper.quiet) for n in range(n_particles)]
+    max_stall_iterations = 500-int(0.75*n_particles)
+    if helper.max_deletions == 0:
+        max_stall_iterations = int(max_stall_iterations * 1.1)
+    particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, max_stall_iterations, helper.quiet) for n in range(n_particles)]
     best = particles[0].current_tree
     best.likelihood = float("-inf")
     for p in particles:
@@ -93,7 +95,8 @@ def pso(helper, n_particles=None):
 
     # coping data into shared memory
     ns.best_swarm = best.copy()
-    ns.best_iteration_likelihoods = []
+    ns.swarm_best_likelihoods = []
+    ns.particles_best_likelihoods = [[] for p in particles]
     ns.iterations_performed = data.iterations_performed
     ns.stop = False
     ns.operations = [2,3]
@@ -101,9 +104,7 @@ def pso(helper, n_particles=None):
     ns.max_dist = 0.1
 
     # selecting particles to assign to processes
-    assigned_particles = []
-    for i in range(helper.cores):
-        assigned_particles.append([])
+    assigned_particles = [[] for i in range(helper.cores)]
     for i in range(n_particles):
         assigned_particles[i%helper.cores].append(particles[i])
 
@@ -120,7 +121,8 @@ def pso(helper, n_particles=None):
         proc.join()
 
     # copying back data from shared memory
-    data.best_iteration_likelihoods = ns.best_iteration_likelihoods
+    data.swarm_best_likelihoods = ns.swarm_best_likelihoods
+    data.particles_best_likelihoods = ns.particles_best_likelihoods
     data.iterations_performed = ns.iterations_performed
     data.best = ns.best_swarm.copy()
 

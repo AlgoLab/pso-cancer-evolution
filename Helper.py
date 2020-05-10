@@ -38,6 +38,7 @@ def setup_arguments(arguments):
 
     # particles
     n_particles = [int(i) for i in arguments['-p'].split(',')]
+    multiple_runs = len(n_particles) > 1
     if len(n_particles) == 1:
         n_particles = n_particles[0]
         if n_particles < 2:

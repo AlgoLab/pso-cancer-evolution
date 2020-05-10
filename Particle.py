@@ -11,13 +11,14 @@ import threading
 class Particle(object):
 
 
-    def __init__(self, cells, mutation_number, mutation_names, number, quiet):
+    def __init__(self, cells, mutation_number, mutation_names, number, max_stall_iterations, quiet):
         self.number = number
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
         self.quiet = quiet
         self.best = self.current_tree.copy() # best tree found by this particle
-        self.max_stall_iterations = 500
-        self.best_iteration_likelihoods = []
+        self.max_stall_iterations = max_stall_iterations
+        self.swarm_best_likelihoods = []
+        self.best_likelihoods = []
 
 
     def particle_start(self, helper, ns, lock):
@@ -39,6 +40,7 @@ class Particle(object):
 
         for it in range(helper.iterations):
             self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
+            self.best_likelihoods.append(self.best.likelihood)
 
             if self.number == 1:
                 lh = ns.best_swarm.likelihood
@@ -63,9 +65,11 @@ class Particle(object):
                     improvements = deque([1] * self.max_stall_iterations)
                     ns.operations = [0,1,2,3]
                     bm_phase = True
+                    if helper.max_deletions == 0:
+                        ns.stop = True
 
                 # update list for lh plot
-                self.best_iteration_likelihoods.append(lh)
+                self.swarm_best_likelihoods.append(lh)
 
                 # check if it's time to stop
                 if helper.automatic_stop and (sum(improvements) < helper.tolerance or (time.time()-start_time) >= (helper.max_time)):
@@ -75,8 +79,13 @@ class Particle(object):
                 break
 
         if self.number == 1:
-            ns.best_iteration_likelihoods = self.best_iteration_likelihoods
+            ns.swarm_best_likelihoods = self.swarm_best_likelihoods
+
         lock.acquire()
+        tmp = ns.particles_best_likelihoods
+        tmp[self.number] = self.best_likelihoods
+        ns.particles_best_likelihoods = tmp
+
         tmp = ns.iterations_performed
         tmp[self.number] = it + 1
         ns.iterations_performed = tmp
@@ -122,9 +131,8 @@ class Particle(object):
         Operation.tree_operation(self.current_tree, op, helper.k, helper.gamma, helper.max_deletions)
         self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
-        # updating log likelihood and bests
+        # updating log likelihood
         lh = Tree.greedy_loglikelihood(self.current_tree, helper.matrix, helper.cells, helper.mutation_number)
-
         self.current_tree.likelihood = lh
 
         # update particle best

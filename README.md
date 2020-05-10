@@ -19,7 +19,7 @@ The possible operations are:
   - swap two random nodes (2)
   - prune-regraft two random nodes (3)
 
-In the first part we use just 2/3 operations, in the second part just 0/1 operations.\
+In the first part we use just 2/3 operations, in the second part 0/1 too.\
 We switch from the first to the second part when:
   - 3/4 of maxtime execution
   - 3/4 of total iterations (if iterations given in input)
@@ -70,9 +70,9 @@ Done!
 - `-g [FLOAT/STRING]`: Loss rate in input file or path of the file containing different GAMMA rates for each mutations [default: 1].
 - `-t [INT]`: Number of iterations (-m argument will be ignored; not used by default).
 - `-d [INT]`: Maximum number of total deletions allowed [default: +inf].
-- `-e [STRING]`: Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations (not used by default).
-- `-T [FLOAT]`: Tolerance, minimum relative improvement (between 0 and 1) in the last 500 iterations in order to keep going, if iterations are not used [default: 0.005].
-- `-m [INT]`: Maximum time (in seconds) of total PSO execution [default: 1800].
+- `-e [STRING]`: Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations.
+- `-T [FLOAT]`: Tolerance, minimum relative improvement (between 0 and 1) in the last iterations in order to keep going, if iterations are not used [default: 0.005].
+- `-m [INT]`: Maximum time (in seconds) of total PSO execution (not used by default).
 - `-I [STRING]`: Actual correct matrix, for testing (not used by default).
 
 **Optional execution options**

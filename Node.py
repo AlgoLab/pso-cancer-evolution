@@ -12,13 +12,13 @@ class Node(Tree):
     def __init__(self, name, parent, mutation_id, loss=False):
         self.mutation_id = mutation_id
         self.loss = loss
-
         super().__init__(newick=None, name=name)
-
         if parent: # automatically add this node to its parent on creation
             parent.add_child(self)
 
+
     uid = property(fget=_get_uid)
+
 
     def __str__(self):
         return str(self.name) + ("-" if self.loss else "")
@@ -94,7 +94,7 @@ class Node(Tree):
 
     def get_genotype_profile(self, genotypes):
         """Walks up to the root and maps the genotype for the current node mutation"""
-        if self.mutation_id == -1:
+        if not self.up:
             return
         if not self.loss:
             genotypes[self.mutation_id] += 1
@@ -229,10 +229,6 @@ class Node(Tree):
             props = {"label": "%s" % (n.name)}
             if n.loss: # marking back-mutations
                 props["color"] = "red"
-            #     for p in n.iter_ancestors():
-            #         if n.mutation_id == p.mutation_id and not p.loss:
-            #             out += self._to_dot_node(n.uid, p.uid, props={"style": "dashed", "color": "gray"})
-            #             break
             out += self._to_dot_node(n.uid, props=props)
             out += self._to_dot_node(self.uid, n.uid)
             if not n.is_leaf():
@@ -243,52 +239,5 @@ class Node(Tree):
         return out
 
 
-    def _to_json_children(self):
-        """
-            Support function for printing the json tree
-        """
-        node = {"name": self.name, "uid": self.uid, "loss": self.loss, "children": []}
-        for n in self.children:
-            node["children"].append(n._to_json_children())
-        return node
-
-
-    def to_json(self):
-        """
-            Returns a json string representing the current tree
-        """
-        node = {"name": self.name, "uid": self.uid, "loss": self.loss, "root": True, "children": []}
-        for n in self.children:
-            node["children"].append(n._to_json_children())
-        return json.dumps(node, indent=4)
-
-
-    def to_string(self):
-        return "[uid: %s; dist: %d]" % (str(self.uid), self.get_distance(self.get_tree_root()))
-
-
-    def _to_tikz_node(self):
-        out = ''
-        back_mutation = ''
-        for c in self.get_children():
-            out += c._to_tikz_node()
-        if self.loss:
-            back_mutation = ',color=red'
-        return '\n\t[{%s}%s %s]' % (self.name, back_mutation, out)
-
-
-    def to_tikz(self):
-        nodes = self.get_cached_content()
-        out = '\\begin{forest}\n\tgermline'
-        out += '\n\t[{%s} ' % self.name
-        for c in self.get_children():
-            out += c._to_tikz_node()
-        return out + ']\n\\end{forest}'
-
-
-    def save(self, filename="test.gv", fileformat="dot"):
-        if fileformat == "dot":
-            Source(self.to_dot(), filename=filename, format="png").render()
-        elif fileformat == "json":
-            with open(filename, 'w') as f:
-                f.write(self.to_json())
+    def save(self, filename):
+        Source(self.to_dot(), filename=filename, format="png").render()
