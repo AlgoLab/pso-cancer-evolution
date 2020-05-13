@@ -4,6 +4,8 @@ import numpy
 import json
 import math
 
+max_dist = 0
+
 class Node(Tree):
 
     def _get_uid(self):
@@ -103,7 +105,7 @@ class Node(Tree):
         self.up.get_genotype_profile(genotypes)
 
 
-    def get_clade_by_distance(self, max_dist, distance):
+    def get_clade_by_distance(self, dist):
         """
             Choose a clade, from this tree, that will be attached in another
             tree. It's chosen either randomly or after calculating the
@@ -111,21 +113,22 @@ class Node(Tree):
             in the past clade attachments: based on that, it chooses
             the height of the clade, and randomly, it chooses which clade.
         """
+        global max_dist
+        if dist > 1:
+            dist = 1
+        if dist > max_dist:
+            max_dist = dist
+
         nodes = self.get_clades()
 
         if numpy.random.uniform() < 0.8:
-
-            max_h = self.get_height()
-            perc = (distance/max_dist)
-            if perc > 1:
-                perc = 1
-            level = math.ceil(perc*(max_h-1))
-
+            max_h = self.get_height() - 1
+            relative_dist = dist / max_dist
+            level = math.ceil(relative_dist * max_h)
             numpy.random.shuffle(nodes)
             for n in nodes:
                 if n.get_height() == level:
                     return n
-
         else:
             return numpy.random.choice(nodes)
 

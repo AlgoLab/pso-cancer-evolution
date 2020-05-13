@@ -55,7 +55,7 @@ def setup_arguments(arguments):
 
     # particles
     if arguments['-p'] is None:
-        n_particles = math.ceil(0.9*(cells*mutation_number)**(0.5))
+        n_particles = math.ceil((cells*mutation_number)**(0.5))
         multiple_runs = False
     else:
         n_particles = [int(i) for i in arguments['-p'].split(',')]

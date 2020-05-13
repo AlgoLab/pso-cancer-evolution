@@ -124,13 +124,15 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# test files
-test.sh
-_test.py
-
 # End of https://www.gitignore.io/api/python
 
 .vscode/
 *.gv
 results*/
 *.tar.*z
+
+# test files <---
+test.sh
+_test.py
+personal_notes
+*alpha*

@@ -102,7 +102,6 @@ def pso(helper, n_particles=None):
     ns.stop = False
     ns.operations = [2,3]
     ns.attach = True
-    ns.max_dist = 0.1
 
     # selecting particles to assign to processes
     assigned_particles = [[] for i in range(helper.cores)]
