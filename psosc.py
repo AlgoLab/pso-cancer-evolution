@@ -2,27 +2,28 @@
 Particle Swarm Optimization Single Cell inference
 
 Usage:
-    psosc.py (-i infile) (-p particles) (-c cores) (-k k) (-a alpha) (-b beta)
-        [-g gamma] [-t iterations] [-d max_deletions] [-e mutfile] [-T tolerance] [-m maxtime] [-I truematrix] [--quiet] [--output output]
-    psosc.py -h | --help
-    psosc.py -v | --version
+    psosc.py (-i infile) (-c cores) (-k k) (-a alpha) (-b beta)
+         [-p particles] [-g gamma] [-t iterations] [-d max_deletions] [-e mutfile] [-T tolerance] [-m maxtime] [-I truematrix] [--quiet] [--output output]
+    psosc.py --help
+    psosc.py --version
 
 Options:
-    -i infile                       Matrix input file.
-    -p particles                    Number of particles to use for PSO (single or multiple values, separated by commas, for a multiple run).
-    -c cores                        Number of CPU cores used for the execution.
-    -k k                            K value of Dollo(k) model used as phylogeny tree.
-    -a alpha                        False negative rate in input file or path of the file containing different FN rates for each mutations.
-    -b beta                         False positive rate.
-    -g gamma                        Loss rate in input file or path of the file containing different GAMMA rates for each mutations [default: 1].
-    -t iterations                   Number of iterations (-m argument will be ignored; not used by default).
-    -d max_deletions                Maximum number of total deletions allowed [default: +inf].
-    -e mutfile                      Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations.
-    -T tolerance                    Tolerance, minimum relative improvement (between 0 and 1) in the last iterations in order to keep going, if iterations are not used [default: 0.005].
-    -m maxtime                      Maximum time (in seconds) of total PSOSC execution (not used by default).
-    -I truematrix                   Actual correct matrix, for algorithm testing (not used by default).
-    --quiet                         Doesn't print anything (not used by default).
-    --output output                 Limit the output (files created) to: (image | plot | text_file | all) [default: all].
+    -i infile               Matrix input file
+    -c cores                Number of CPU cores
+    -k k                    K value of Dollo(k) model used as phylogeny tree
+    -a alpha                False negative rate in input file or path of the file containing different FN rates for each mutations
+    -b beta                 False positive rate
+
+    -p particles            Number of particles (single or multiple values, separated by commas, for a multiple run); by default it is calculated proportionally to the size of the matrix
+    -g gamma                Loss rate in input file or path of the file containing different GAMMA rates for each mutations [default: 1]
+    -t iterations           Number of iterations (-m argument will be ignored; not used by default)
+    -d max_deletions        Maximum number of total deletions allowed [default: +inf]
+    -e mutfile              Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations (not used by default)
+    -T tolerance            Tolerance, minimum relative improvement (between 0 and 1) in the last iterations in order to keep going, if iterations are not used [default: 0.005]
+    -m maxtime              Maximum time (in seconds) of total PSOSC execution (not used by default)
+    -I truematrix           Actual correct matrix, for algorithm testing (not used by default)
+    --quiet                 Doesn't print anything (not used by default)
+    --output output         Limit the output (files created) to: (image | plots | text_file | all) [default: all]
 
 """
 
@@ -61,19 +62,19 @@ def main(argv):
 
 
 def pso(helper, n_particles=None):
+    if n_particles == None:
+         n_particles = helper.n_particles
+
     if not helper.quiet:
-        print("\n • PARTICLES START-UP")
+        print("\n • %d PARTICLES START-UP" % n_particles)
 
     Tree.set_probabilities(helper.alpha, helper.beta)
 
-    if n_particles == None:
-         n_particles = helper.n_particles
-     # print(n_particles)
     data = Data(helper.filename, n_particles, helper.output)
     data.pso_start = time.time()
 
     # create particles
-    max_stall_iterations = 500-int(0.75*n_particles)
+    max_stall_iterations = 460-int(0.75*n_particles)
     if helper.max_deletions == 0:
         max_stall_iterations = int(max_stall_iterations * 1.1)
     particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, max_stall_iterations, helper.quiet) for n in range(n_particles)]

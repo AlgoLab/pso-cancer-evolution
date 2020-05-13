@@ -60,24 +60,24 @@ Done!
 ## Usage
 **Required input parameters**
 - `-i [STRING]`: Matrix input file
-- `-p [INT]`: Number of particles to use for PSO (single or multiple values, separated by commas, for a multiple run).
-- `-c [INT]`: Number of CPU cores used for the execution.
-- `-k [INT]`: K value of Dollo(k) model used as phylogeny tree.
-- `-a [FLOAT/STRING]`: False negative rate in input file or path of the file containing different FN rates for each mutations.
-- `-b [FLOAT]`: False positive rate.
+- `-c [INT]`: Number of CPU cores
+- `-k [INT]`: K value of Dollo(k) model used as phylogeny tree
+- `-a [FLOAT/STRING]`: False negative rate in input file or path of the file containing different FN rates for each mutations
+- `-b [FLOAT]`: False positive rate
 
 **Optional input parameters**
-- `-g [FLOAT/STRING]`: Loss rate in input file or path of the file containing different GAMMA rates for each mutations [default: 1].
-- `-t [INT]`: Number of iterations (-m argument will be ignored; not used by default).
-- `-d [INT]`: Maximum number of total deletions allowed [default: +inf].
-- `-e [STRING]`: Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations.
-- `-T [FLOAT]`: Tolerance, minimum relative improvement (between 0 and 1) in the last iterations in order to keep going, if iterations are not used [default: 0.005].
-- `-m [INT]`: Maximum time (in seconds) of total PSO execution (not used by default).
-- `-I [STRING]`: Actual correct matrix, for testing (not used by default).
+- `-p [INT]`: Number of particles (single or multiple values, separated by commas, for a multiple run); by default it is calculated proportionally to the size of the matrix
+- `-g [FLOAT/STRING]`: Loss rate in input file or path of the file containing different GAMMA rates for each mutations [default: 1]
+- `-t [INT]`: Number of iterations (-m argument will be ignored; not used by default)
+- `-d [INT]`: Maximum number of total deletions allowed [default: +inf]
+- `-e [STRING]`: Path of the mutation names. If not used, mutations will be named progressively from 1 to mutations (not used by default)
+- `-T [FLOAT]`: Tolerance, minimum relative improvement (between 0 and 1) in the last iterations in order to keep going, if iterations are not used [default: 0.005]
+- `-m [INT]`: Maximum time (in seconds) of total PSO execution (not used by default)
+- `-I [STRING]`: Actual correct matrix, for testing (not used by default)
 
 **Optional execution options**
 - `--quiet`: Doesn't print anything (not used by default).
-- `--output [STRING]`: Limit the output (files created) to: (image | plot | text_file | all) [default: all]
+- `--output [STRING]`: Limit the output (files created) to: (image | plots | text_file | all) [default: all]
 
 
 ## Examples

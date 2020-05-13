@@ -1,6 +1,7 @@
 import io
 import numpy
 import multiprocessing as mp
+import math
 
 
 class Helper(object):
@@ -36,34 +37,6 @@ class Helper(object):
 def setup_arguments(arguments):
     """Check arguments for errors and returns them ready for execution"""
 
-    # particles
-    n_particles = [int(i) for i in arguments['-p'].split(',')]
-    multiple_runs = len(n_particles) > 1
-    if len(n_particles) == 1:
-        n_particles = n_particles[0]
-        if n_particles < 2:
-            raise Exception("Error! n_particles < 2")
-
-    # cores
-    cores = int(arguments['-c'])
-    if cores < 1:
-        raise Exception("Error! Cores < 1")
-    if cores > mp.cpu_count():
-        raise Exception("Error! Cores in input are more than this computer's cores")
-    if (multiple_runs and any(cores > p for p in n_particles)) or (not(multiple_runs) and cores > n_particles):
-        raise Exception("Error! Cores cannot be more than particles")
-
-    # iterations
-    iterations = (arguments['-t'])
-    automatic_stop = False
-    if iterations == None:
-        automatic_stop = True
-        iterations = 100000
-    else:
-        iterations = int(iterations)
-    if iterations < 1:
-        raise Exception("Error! Iterations < 1")
-
     # matrix
     filename = arguments['-i']
     with open(filename, 'r') as f:
@@ -79,6 +52,41 @@ def setup_arguments(arguments):
         with open(arguments['-I'], 'r') as f:
             truematrix =  numpy.atleast_2d(numpy.loadtxt(io.StringIO(f.read())))
         truematrix = [list(map(int, x)) for x in truematrix.tolist()] #convert matrix to int
+
+    # particles
+    if arguments['-p'] is None:
+        n_particles = math.ceil(0.9*(cells*mutation_number)**(0.5))
+        multiple_runs = False
+    else:
+        n_particles = [int(i) for i in arguments['-p'].split(',')]
+        multiple_runs = len(n_particles) > 1
+        if len(n_particles) == 1:
+            n_particles = n_particles[0]
+            if n_particles < 2:
+                raise Exception("Error! n_particles < 2")
+
+    # cores
+    cores = int(arguments['-c'])
+    if cores < 1:
+        raise Exception("Error! Cores < 1")
+    if cores > mp.cpu_count():
+        raise Exception("Error! Cores in input are more than this computer's cores")
+    if multiple_runs:
+        if any(cores > p for p in n_particles):
+            raise Exception("Error! Cores cannot be more than particles")
+    elif cores > n_particles:
+        raise Exception("Error! Cores (%d) cannot be more than particles (%d)" % (cores, n_particles))
+
+    # iterations
+    iterations = (arguments['-t'])
+    automatic_stop = False
+    if iterations == None:
+        automatic_stop = True
+        iterations = 100000
+    else:
+        iterations = int(iterations)
+    if iterations < 1:
+        raise Exception("Error! Iterations < 1")
 
     # mutation names
     mutation_names = _read_mutation_names(arguments['-e'], mutation_number)
@@ -118,7 +126,7 @@ def setup_arguments(arguments):
     # execution options
     quiet = arguments['--quiet']
     output = arguments['--output']
-    if output not in ["image", "plot", "text_file", "all"]:
+    if output not in ["image", "plots", "text_file", "all"]:
         raise Exception("Error! Output must be either one of these: (image | plot | text_file | all)")
 
     return (filename, n_particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names,

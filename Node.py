@@ -171,11 +171,11 @@ class Node(Tree):
                     if tree.k_losses_list[n.mutation_id] > k or len(tree.losses_list) > max_deletions:
                         n.delete_node(tree)
 
-                    # delete loss if not valid
+                    # delete loss if not valid or useless
                     else:
                         genotypes = [0]*mutation_number
                         n.get_genotype_profile(genotypes)
-                        if min(genotypes) < 0:
+                        if min(genotypes) < 0 or sum(genotypes) == 0:
                             n.delete_node(tree)
 
                         # delete loss if duplicate
