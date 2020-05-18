@@ -38,6 +38,8 @@ import time
 from docopt import docopt
 from datetime import datetime
 import multiprocessing
+import threading
+import psutil
 
 
 def main(argv):
@@ -62,51 +64,40 @@ def main(argv):
 
 
 def pso(helper, n_particles=None):
+    # assigning process to cores
+    selected_cores = get_least_used_cores(helper.cores)
+    assign_to_cores(os.getpid(), selected_cores)
+
     if n_particles == None:
          n_particles = helper.n_particles
 
     if not helper.quiet:
-        print("\n • %d PARTICLES START-UP" % n_particles)
+        print("\n • %d PARTICLES START-UP" % (n_particles))
 
     Tree.set_probabilities(helper.alpha, helper.beta)
 
     data = Data(helper.filename, n_particles, helper.output)
     data.pso_start = time.time()
 
-    # create particles
-    max_stall_iterations = 460-int(0.75*n_particles)
-    if helper.max_deletions == 0:
-        max_stall_iterations = int(max_stall_iterations * 1.1)
-    particles = [Particle(helper.cells, helper.mutation_number, helper.mutation_names, n, max_stall_iterations, helper.quiet) for n in range(n_particles)]
-    best = particles[0].current_tree
-    best.likelihood = float("-inf")
-    for p in particles:
-        p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number)
-        p.best.likelihood = p.current_tree.likelihood
-        if (p.current_tree.likelihood > best.likelihood):
-            best = p.current_tree
-    data.starting_likelihood = best.likelihood
-    if helper.truematrix != None:
-        data.starting_likelihood_true = Tree.greedy_loglikelihood(best, helper.truematrix, helper.cells, helper.mutation_number)
-
     # creating shared memory between processes
     manager = multiprocessing.Manager()
+    assign_to_cores(manager._process.ident, selected_cores)
     lock = manager.Lock()
     ns = manager.Namespace()
 
+    # selecting particles to assign to processes
+    assigned_numbers = [[] for i in range(helper.cores)]
+    for i in range(n_particles):
+        assigned_numbers[i%(helper.cores)].append(i)
+
     # coping data into shared memory
-    ns.best_swarm = best.copy()
+    ns.best_swarm = None
     ns.swarm_best_likelihoods = []
-    ns.particles_best_likelihoods = [[] for p in particles]
+    ns.particle_best_likelihoods = [[] for x in range(helper.n_particles)]
     ns.iterations_performed = data.iterations_performed
     ns.stop = False
     ns.operations = [2,3]
     ns.attach = True
-
-    # selecting particles to assign to processes
-    assigned_particles = [[] for i in range(helper.cores)]
-    for i in range(n_particles):
-        assigned_particles[i%helper.cores].append(particles[i])
 
     if not helper.quiet:
         print("\n • PSO RUNNING...")
@@ -115,17 +106,17 @@ def pso(helper, n_particles=None):
     # creating and starting processes
     processes = []
     for i in range(helper.cores):
-        processes.append(multiprocessing.Process(target = start_threads, args = (assigned_particles[i], helper, ns, lock)))
-        processes[i].start()
-    for proc in processes:
-        proc.join()
+        processes.append(multiprocessing.Process(target = start_threads, args = (selected_cores, assigned_numbers[i], data, helper, ns, lock)))
+    for p in processes:
+        p.start()
+    for p in processes:
+        p.join()
 
     # copying back data from shared memory
     data.swarm_best_likelihoods = ns.swarm_best_likelihoods
-    data.particles_best_likelihoods = ns.particles_best_likelihoods
+    data.particle_best_likelihoods = ns.particle_best_likelihoods
     data.iterations_performed = ns.iterations_performed
     data.best = ns.best_swarm.copy()
-
     data.pso_end = time.time()
 
     if not helper.quiet:
@@ -136,11 +127,35 @@ def pso(helper, n_particles=None):
     return data
 
 
-def start_threads(assigned_particles, helper, ns, lock):
-    for p in assigned_particles:
-        p.particle_start(helper, ns, lock)
-    for p in assigned_particles:
-        p.particle_join()
+def start_threads(selected_cores, assigned_numbers, data, helper, ns, lock):
+    assign_to_cores(os.getpid(), selected_cores)
+    particles = []
+    for i in assigned_numbers:
+        p = Particle(helper.cells, helper.mutation_number, helper.mutation_names, i)
+        p.current_tree.likelihood = Tree.greedy_loglikelihood(p.current_tree, helper.matrix, helper.cells, helper.mutation_number)
+        if ns.best_swarm is None:
+            ns.best_swarm = p.current_tree.copy()
+        p.thread = threading.Thread(target = p.run_iterations, args = (helper, ns, lock))
+        particles.append(p)
+    for p in particles:
+        p.thread.start()
+    for p in particles:
+        p.thread.join()
+
+
+def get_least_used_cores(n_cores):
+    cpu_usage = psutil.cpu_percent(percpu=True)
+    cores = []
+    for i in range(n_cores):
+        c = cpu_usage.index(min(cpu_usage))
+        cores.append(c)
+        cpu_usage[c] = float("+inf")
+    return cores
+
+
+def assign_to_cores(pid, cores):
+    proc = psutil.Process(pid)
+    proc.cpu_affinity(cores)
 
 
 if __name__ == "__main__":

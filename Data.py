@@ -12,11 +12,10 @@ class Data(object):
         self.filename = filename[filename.rfind('/')+1:]
         self.pso_start = 0
         self.pso_end = 0
-        self.starting_likelihood = 0
         self.n_particles = n_particles
         self.iterations_performed = [0] * n_particles
         self.swarm_best_likelihoods = []
-        self.particles_best_likelihoods = []
+        self.particle_best_likelihoods = []
         self.true_positives = 0
         self.true_negatives = 0
         self.false_negatives = 0
@@ -71,11 +70,11 @@ class Data(object):
             plt.savefig(dir + "/swarm_best_lh.pdf")
             plt.clf()
 
-            plt.title("Particles likelihood over Time")
+            plt.title("Particles likelihoods over Time")
             plt.xlabel("Iteration number")
             plt.ylabel("Log Likelihood")
-            for lh in self.particles_best_likelihoods:
-                plt.plot(lh)
+            for array in self.particle_best_likelihoods:
+                plt.plot(array)
             plt.tight_layout()
             plt.savefig(dir + "/particles_best_lh.pdf")
             plt.clf()
@@ -85,25 +84,23 @@ class Data(object):
             f = open(dir + "/results_" + self.filename, "w+")
 
             f.write("\n---------------------------------\n")
-            f.write("\n>> Starting likelihood:\t%f\n" % self.starting_likelihood)
-            f.write(">> Final likelihood:\t%f\n" % self.best.likelihood)
-            f.write("\n>> False negatives:\t %d\t(%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 2))))
-            f.write(">> False positives:\t %d\t(%s%%)\n" % (self.false_positives, str(round(self.false_positives_relative, 2))))
-            f.write(">> True negatives:\t %d\t(%s%%)\n" % (self.true_negatives, str(round(self.true_negatives_relative, 2))))
-            f.write(">> True positives:\t %d\t(%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 2))))
-            f.write(">> Added missing values: %d\t(%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 2))))
+            f.write("\n>> Final likelihood: %f\n" % self.best.likelihood)
+            f.write("\n>> False negatives: %d (%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 2))))
+            f.write(">> False positives: %d (%s%%)\n" % (self.false_positives, str(round(self.false_positives_relative, 2))))
+            f.write(">> True negatives: %d (%s%%)\n" % (self.true_negatives, str(round(self.true_negatives_relative, 2))))
+            f.write(">> True positives: %d (%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 2))))
+            f.write(">> Added missing values: %d (%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 2))))
             f.write("\n---------------------------------\n")
 
             if helper.truematrix != None:
                 lh = self.calculate_relative_data(helper, helper.truematrix)
                 f.write("\n[Actual correct matrix]\n")
-                f.write(">> Starting likelihood:\t%f\n" % (self.starting_likelihood_true))
-                f.write(">> Final likelihood:\t%f\n" % (lh))
-                f.write("\n>> False negatives:\t %d\t(%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 2))))
-                f.write(">> False positives:\t %d\t(%s%%)\n" % (self.false_positives, str(round(self.false_positives_relative, 2))))
-                f.write(">> True negatives:\t %d\t(%s%%)\n" % (self.true_negatives, str(round(self.true_negatives_relative, 2))))
-                f.write(">> True positives:\t %d\t(%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 2))))
-                f.write(">> Added missing values: %d\t(%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 2))))
+                f.write(">> Final likelihood: %f\n" % (lh))
+                f.write("\n>> False negatives: %d (%s%%)\n" % (self.false_negatives, str(round(self.false_negatives_relative, 2))))
+                f.write(">> False positives: %d (%s%%)\n" % (self.false_positives, str(round(self.false_positives_relative, 2))))
+                f.write(">> True negatives: %d (%s%%)\n" % (self.true_negatives, str(round(self.true_negatives_relative, 2))))
+                f.write(">> True positives: %d (%s%%)\n" % (self.true_positives, str(round(self.true_positives_relative, 2))))
+                f.write(">> Added missing values: %d (%s%%)\n" % (self.missing_values, str(round(self.missing_values_relative, 2))))
                 f.write("\n---------------------------------\n")
 
             f.write("\n>> PSO completed in %f seconds\n" % self.get_total_time())
@@ -144,7 +141,7 @@ class Data(object):
             f.write(">> Tolerance: %s\n" % str(helper.tolerance))
             f.write(">> Max time: %s\n" % str(helper.max_time))
             if not helper.automatic_stop:
-                f.write(">> Iterations: %d\n" % helper.cores)
+                f.write(">> Iterations: %d\n" % helper.iterations)
             else:
                 f.write(">> Iterations:\n")
                 for i in range(self.n_particles):
@@ -181,7 +178,7 @@ class Data(object):
                 its = str(data.iterations_performed[0])
             else:
                 its = str("[" + str(min(data.iterations_performed)) + "," + str(max(data.iterations_performed)) + "]")
-            lh1 = data.starting_likelihood
+            lh1 = data.swarm_best_likelihoods[0]
             lh2 = max(data.swarm_best_likelihoods)
             t = data.pso_end-data.pso_start
             f.write("\t%s & %s & %f & %f & %f \\\\\n" % (nofp, its, lh1, lh2, t))

@@ -5,56 +5,45 @@ from datetime import datetime
 from collections import deque
 import time
 import numpy
-import threading
 
 
 class Particle(object):
 
 
-    def __init__(self, cells, mutation_number, mutation_names, number, max_stall_iterations, quiet):
+    def __init__(self, cells, mutation_number, mutation_names, number):
         self.number = number
         self.current_tree = Tree.random(cells, mutation_number, mutation_names)
-        self.quiet = quiet
-        self.best = self.current_tree.copy() # best tree found by this particle
-        self.max_stall_iterations = max_stall_iterations
+        self.best = self.current_tree.copy()
         self.swarm_best_likelihoods = []
-        self.best_likelihoods = []
-
-
-    def particle_start(self, helper, ns, lock):
-        self.thread = threading.Thread(target = self.run_iterations, args = (helper, ns, lock))
-        self.thread.start()
-
-
-    def particle_join(self):
-        self.thread.join()
+        self.particle_best_likelihoods = []
 
 
     def run_iterations(self, helper, ns, lock):
         """execute the iterations and stops after reaching a stopping criteria"""
         start_time = time.time()
         old_lh = ns.best_swarm.likelihood
-        improvements = deque([1] * self.max_stall_iterations) # queue
+        improvements = deque([1] * helper.max_stall_iterations) # queue
         bm_phase = False
         exit_local_iterations = 0
 
         for it in range(helper.iterations):
             self.particle_iteration(it, helper, ns.best_swarm.copy(), ns, lock)
-            self.best_likelihoods.append(self.best.likelihood)
+            self.particle_best_likelihoods.append(self.best.likelihood)
 
             if self.number == 1:
+                # update last iterations relative improvement
                 lh = ns.best_swarm.likelihood
                 improvements.popleft()
                 improvements.append(1 - lh / old_lh)
                 old_lh = lh
 
                 # update on screen
-                if not self.quiet and it % 20 == 0:
+                if not helper.quiet and it % 25 == 0:
                     print("\t%s\t\t%s" % (datetime.now().strftime("%H:%M:%S"), str(round(lh, 2))))
 
                 # try to exit local optimum
-                if exit_local_iterations < -100 and sum(list(improvements)[350:]) < helper.tolerance:
-                    exit_local_iterations = 25
+                if exit_local_iterations < -100 and sum(list(improvements)[100:]) < 0:
+                    exit_local_iterations = 20
                     ns.attach = False
                 elif exit_local_iterations < 0:
                     ns.attach = True
@@ -62,7 +51,7 @@ class Particle(object):
 
                 # check if it's time to start adding backmutations
                 if not(bm_phase) and self.start_backmutations((time.time()-start_time), helper.max_time, helper.automatic_stop, it, helper.iterations, improvements, helper.tolerance):
-                    improvements = deque([1] * self.max_stall_iterations)
+                    improvements = deque([1] * helper.max_stall_iterations)
                     ns.operations = [0,1,2,3]
                     bm_phase = True
                     if helper.max_deletions == 0:
@@ -82,9 +71,9 @@ class Particle(object):
             ns.swarm_best_likelihoods = self.swarm_best_likelihoods
 
         lock.acquire()
-        tmp = ns.particles_best_likelihoods
-        tmp[self.number] = self.best_likelihoods
-        ns.particles_best_likelihoods = tmp
+        tmp = ns.particle_best_likelihoods
+        tmp[self.number] = self.particle_best_likelihoods
+        ns.particle_best_likelihoods = tmp
 
         tmp = ns.iterations_performed
         tmp[self.number] = it + 1
@@ -105,58 +94,39 @@ class Particle(object):
 
         op = numpy.random.choice(ns.operations)
 
-        if op == 0:
-            temp = self.current_tree.copy()
-            Operation.tree_operation(temp, op, helper.k, helper.gamma, helper.max_deletions)
-            temp.phylogeny.losses_fix(temp, helper.mutation_number, helper.k, helper.max_deletions)
-            lh = Tree.greedy_loglikelihood(temp, helper.matrix, helper.cells, helper.mutation_number)
-            if (lh - self.best.likelihood) > (helper.cells*helper.mutation_number)/150:
-                self.current_tree = temp
-                self.best = temp.copy()
-                lock.acquire()
-                if lh > ns.best_swarm.likelihood:
-                    ns.best_swarm = temp.copy()
-                lock.release()
+        if op in [2,3] and ns.attach:
+            # movement to particle best
+            particle_distance = 1 - self.best.likelihood / self.current_tree.likelihood
+            if particle_distance > 0:
+                clade_to_be_attached = self.best.phylogeny.get_clade_by_distance(particle_distance)
+                clade_to_be_attached = clade_to_be_attached.copy().detach()
+                clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
+                clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
+                self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
-        else:
+            # movement to swarm best
+            swarm_distance = 1 - best_swarm.likelihood / self.current_tree.likelihood
+            if swarm_distance > 0:
+                clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(swarm_distance)
+                clade_to_be_attached = clade_to_be_attached.copy().detach()
+                clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
+                clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
+                self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
-            if ns.attach:
+        # inertia movement
+        Operation.tree_operation(self.current_tree, op, helper.k, helper.gamma, helper.max_deletions)
+        self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
 
-                # movement to particle best
-                particle_distance = 1 - self.best.likelihood / self.current_tree.likelihood
-                if particle_distance > 0:
-                    clade_to_be_attached= self.best.phylogeny.get_clade_by_distance(particle_distance)
-                    clade_to_be_attached = clade_to_be_attached.copy().detach()
-                    clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
-                    clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
-                    self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
+        # calculate lh
+        lh = Tree.greedy_loglikelihood(self.current_tree, helper.matrix, helper.cells, helper.mutation_number)
+        self.current_tree.likelihood = lh
 
-                # movement to swarm best
-                swarm_distance = 1 - best_swarm.likelihood / self.current_tree.likelihood
-                if swarm_distance > 0:
-                    clade_to_be_attached = best_swarm.phylogeny.get_clade_by_distance(swarm_distance)
-                    clade_to_be_attached = clade_to_be_attached.copy().detach()
-                    clade_destination = numpy.random.choice(self.current_tree.phylogeny.get_clades())
-                    clade_destination.attach_clade(self.current_tree, clade_to_be_attached)
-                    self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
+        # update particle best
+        if lh > self.best.likelihood:
+            self.best = self.current_tree.copy()
 
-
-            # self movement
-            Operation.tree_operation(self.current_tree, op, helper.k, helper.gamma, helper.max_deletions)
-            self.current_tree.phylogeny.losses_fix(self.current_tree, helper.mutation_number, helper.k, helper.max_deletions)
-
-            # calculate lh
-            lh = Tree.greedy_loglikelihood(self.current_tree, helper.matrix, helper.cells, helper.mutation_number)
-            self.current_tree.likelihood = lh
-
-            # update particle best
-            if lh > self.best.likelihood:
-                self.best = self.current_tree.copy()
-
-                lock.acquire()
-
-                # update swarm best
-                if lh > ns.best_swarm.likelihood:
-                    ns.best_swarm = self.current_tree.copy()
-
-                lock.release()
+            # update swarm best
+            lock.acquire()
+            if lh > ns.best_swarm.likelihood or lh == ns.best_swarm.likelihood and len(self.current_tree.losses_list) < len(ns.best_swarm.losses_list):
+                ns.best_swarm = self.current_tree.copy()
+            lock.release()

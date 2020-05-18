@@ -9,8 +9,8 @@ class Helper(object):
 
     def __init__(self, arguments):
 
-        (filename, n_particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha, beta,
-            gamma, k, max_deletions, tolerance, max_time, multiple_runs, quiet, output, automatic_stop) = setup_arguments(arguments)
+        (filename, n_particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names, cells, alpha,
+            beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs, quiet, output, automatic_stop) = setup_arguments(arguments)
 
         self.filename = filename
         self.n_particles = n_particles
@@ -32,6 +32,7 @@ class Helper(object):
         self.quiet = quiet
         self.output = output
         self.automatic_stop = automatic_stop
+        self.max_stall_iterations = 450
 
 
 def setup_arguments(arguments):
@@ -55,7 +56,7 @@ def setup_arguments(arguments):
 
     # particles
     if arguments['-p'] is None:
-        n_particles = math.ceil((cells*mutation_number)**(0.5))
+        n_particles = int(20+3*(cells*mutation_number)**(1/3))
         multiple_runs = False
     else:
         n_particles = [int(i) for i in arguments['-p'].split(',')]
@@ -127,10 +128,10 @@ def setup_arguments(arguments):
     quiet = arguments['--quiet']
     output = arguments['--output']
     if output not in ["image", "plots", "text_file", "all"]:
-        raise Exception("Error! Output must be either one of these: (image | plot | text_file | all)")
+        raise Exception("Error! Output must be either one of these: (image | plots | text_file | all)")
 
-    return (filename, n_particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names,
-        cells, alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs, quiet, output, automatic_stop)
+    return (filename, n_particles, cores, iterations, matrix, truematrix, mutation_number, mutation_names, cells,
+        alpha, beta, gamma, k, max_deletions, tolerance, max_time, multiple_runs, quiet, output, automatic_stop)
 
 
 # reading file with mutation names, if given in input

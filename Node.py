@@ -142,11 +142,7 @@ class Node(Tree):
         for cln in clade_to_be_attached:
             removed = []
             if cln.loss:
-                if clade_destination.is_mutation_already_lost(cln.mutation_id):
-                    cln.delete(prevent_nondicotomic=False)
-                else:
-                    tree.losses_list.append(cln)
-                    tree.k_losses_list[cln.mutation_id] += 1
+                cln.delete(prevent_nondicotomic=False)
             else:
                 for n in nodes_list:
                     if n.mutation_id != -1 and cln.mutation_id == n.mutation_id and not n.loss:
